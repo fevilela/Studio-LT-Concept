@@ -126,8 +126,7 @@ export async function processBotReply(conversationId: string) {
   }
 
   if (escalated) {
-    await sendWhatsAppTextMessage(conversation.phone_number, finalText ?? TRANSITION_MESSAGE);
-    await storeOutboundMessage(conversationId, finalText ?? TRANSITION_MESSAGE);
+    await sendAndStore(conversationId, conversation.phone_number, finalText ?? TRANSITION_MESSAGE);
     await query(`update whatsapp_conversations set status = 'human_active' where id = $1`, [
       conversationId,
     ]);
@@ -135,8 +134,7 @@ export async function processBotReply(conversationId: string) {
   }
 
   if (finalText) {
-    await sendWhatsAppTextMessage(conversation.phone_number, finalText);
-    await storeOutboundMessage(conversationId, finalText);
+    await sendAndStore(conversationId, conversation.phone_number, finalText);
   }
 }
 
@@ -148,15 +146,25 @@ async function escalateAndNotify(conversationId: string, phone: string, reason: 
     `insert into bot_tool_calls (conversation_id, tool_name, input, output) values ($1, 'escalate_to_human', $2, $3)`,
     [conversationId, JSON.stringify({ reason }), JSON.stringify({ escalated: true, reason })]
   );
-  await sendWhatsAppTextMessage(phone, TRANSITION_MESSAGE);
-  await storeOutboundMessage(conversationId, TRANSITION_MESSAGE);
+  await sendAndStore(conversationId, phone, TRANSITION_MESSAGE);
 }
 
-async function storeOutboundMessage(conversationId: string, content: string) {
+/** Envia a resposta e grava o registro independentemente do envio ter sucesso —
+ * assim a equipe consegue ver o que o bot respondeu mesmo se o WhatsApp falhar
+ * (ex.: credenciais ainda não configuradas), e reenviar manualmente depois. */
+async function sendAndStore(conversationId: string, phone: string, content: string) {
+  let status = "sent";
+  try {
+    await sendWhatsAppTextMessage(phone, content);
+  } catch (err) {
+    console.error("[bot] Failed to send WhatsApp message", conversationId, err);
+    status = "failed";
+  }
+
   await query(
     `insert into whatsapp_messages (conversation_id, direction, sender_type, content, message_type, status)
-     values ($1, 'outbound', 'bot', $2, 'text', 'sent')`,
-    [conversationId, content]
+     values ($1, 'outbound', 'bot', $2, 'text', $3)`,
+    [conversationId, content, status]
   );
   await query(`update whatsapp_conversations set last_message_at = now() where id = $1`, [
     conversationId,
