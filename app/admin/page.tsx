@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FileText, CalendarDays, Users, ArrowRight } from "lucide-react";
+import { FileText, CalendarDays, Users, ArrowRight, MessageCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/admin/stat-card";
@@ -26,7 +26,7 @@ export default async function AdminDashboardPage() {
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Orçamentos pendentes" value={stats.pendingQuotes} icon={FileText} />
         <StatCard
           label="Próximos agendamentos"
@@ -34,6 +34,11 @@ export default async function AdminDashboardPage() {
           icon={CalendarDays}
         />
         <StatCard label="Clientes cadastradas" value={stats.totalClients} icon={Users} />
+        <StatCard
+          label="Conversas não lidas"
+          value={stats.unreadConversations}
+          icon={MessageCircle}
+        />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">

@@ -22,17 +22,22 @@ export async function getCurrentTeamMember() {
 }
 
 export async function getDashboardStats() {
-  const [pendingQuotes, upcomingAppointments, totalClients] = await Promise.all([
-    query<{ count: string }>(`select count(*) from quotes where status = 'pending'`),
-    query<{ count: string }>(
-      `select count(*) from appointments where start_time >= now() and status in ('scheduled', 'confirmed')`
-    ),
-    query<{ count: string }>(`select count(*) from clients`),
-  ]);
+  const [pendingQuotes, upcomingAppointments, totalClients, unreadConversations] =
+    await Promise.all([
+      query<{ count: string }>(`select count(*) from quotes where status = 'pending'`),
+      query<{ count: string }>(
+        `select count(*) from appointments where start_time >= now() and status in ('scheduled', 'confirmed')`
+      ),
+      query<{ count: string }>(`select count(*) from clients`),
+      query<{ count: string }>(
+        `select count(*) from whatsapp_conversations where unread_count > 0`
+      ),
+    ]);
 
   return {
     pendingQuotes: Number(pendingQuotes.rows[0].count),
     upcomingAppointments: Number(upcomingAppointments.rows[0].count),
     totalClients: Number(totalClients.rows[0].count),
+    unreadConversations: Number(unreadConversations.rows[0].count),
   };
 }

@@ -10,6 +10,7 @@ import {
   UserRound,
   Settings,
   ImageIcon,
+  MessageCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +18,7 @@ const links = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/orcamentos", label: "Orçamentos", icon: FileText },
   { href: "/admin/agenda", label: "Agenda", icon: CalendarDays },
+  { href: "/admin/conversas", label: "Conversas", icon: MessageCircle },
   { href: "/admin/clientes", label: "Clientes", icon: Users },
   { href: "/admin/equipe", label: "Equipe", icon: UserRound },
   { href: "/admin/galeria", label: "Galeria", icon: ImageIcon },
