@@ -9,9 +9,10 @@ type AppointmentDue = {
   start_time: string;
 };
 
-// Executado periodicamente pelo Vercel Cron (ver vercel.json). Envia lembrete
-// de agendamento ~24h antes via template aprovado da Meta — só funciona depois
-// que WHATSAPP_REMINDER_TEMPLATE_NAME estiver configurado e o template aprovado.
+// Executado periodicamente por um Cron Job do Render (ver render.yaml), que
+// chama esta rota via HTTP. Envia lembrete de agendamento ~24h antes via
+// template aprovado da Meta — só funciona depois que
+// WHATSAPP_REMINDER_TEMPLATE_NAME estiver configurado e o template aprovado.
 export async function GET(request: Request) {
   const cronSecret = process.env.CRON_SECRET;
   if (cronSecret) {
