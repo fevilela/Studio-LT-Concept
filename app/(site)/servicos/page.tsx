@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Section, Eyebrow } from "@/components/site/section";
 import { getServices } from "@/lib/data";
+import { formatPrice } from "@/lib/format";
 
 export const metadata: Metadata = {
   title: "Serviços | Thainá Souza",
@@ -17,10 +18,6 @@ const categoryLabels: Record<string, string> = {
   cerimonia: "Cerimônia",
   pacote: "Pacote Completo",
 };
-
-function formatPrice(value: string) {
-  return Number(value).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-}
 
 export default async function ServicosPage() {
   const services = await getServices();

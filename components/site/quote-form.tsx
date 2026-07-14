@@ -12,10 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { quoteFormSchema, type QuoteFormValues } from "@/lib/validations/quote";
 import type { Service } from "@/lib/data";
-
-function formatPrice(value: string) {
-  return Number(value).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-}
+import { formatPrice } from "@/lib/format";
 
 export function QuoteForm({ services }: { services: Service[] }) {
   const [submitted, setSubmitted] = useState(false);

@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Montserrat } from "next/font/google";
 import "./globals.css";
-import { SiteHeader } from "@/components/site/header";
-import { SiteFooter } from "@/components/site/footer";
-import { WhatsAppFloat } from "@/components/site/whatsapp-float";
 import { Toaster } from "@/components/ui/sonner";
 
 const cormorant = Cormorant_Garamond({
@@ -36,10 +33,7 @@ export default function RootLayout({
       className={`${cormorant.variable} ${montserrat.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
-        <SiteHeader />
-        <main className="flex-1">{children}</main>
-        <SiteFooter />
-        <WhatsAppFloat />
+        {children}
         <Toaster position="top-center" richColors />
       </body>
     </html>
