@@ -43,3 +43,54 @@ export async function sendWhatsAppTextMessage(to: string, body: string) {
 
   return json.messages?.[0]?.id as string | undefined;
 }
+
+/**
+ * Envia uma mensagem de template pré-aprovado pela Meta — necessário para iniciar
+ * contato fora da janela de 24h (ex.: lembretes de agendamento). O nome do template
+ * e seus parâmetros dependem do que for cadastrado e aprovado no Business Manager.
+ */
+export async function sendWhatsAppTemplateMessage(
+  to: string,
+  templateName: string,
+  languageCode: string,
+  parameters: string[] = []
+) {
+  const { accessToken, phoneNumberId } = getConfig();
+
+  const res = await fetch(
+    `https://graph.facebook.com/${GRAPH_VERSION}/${phoneNumberId}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to: to.replace(/\D/g, ""),
+        type: "template",
+        template: {
+          name: templateName,
+          language: { code: languageCode },
+          components: parameters.length
+            ? [
+                {
+                  type: "body",
+                  parameters: parameters.map((text) => ({ type: "text", text })),
+                },
+              ]
+            : undefined,
+        },
+      }),
+    }
+  );
+
+  const json = await res.json();
+
+  if (!res.ok) {
+    const message = json?.error?.message ?? "Falha ao enviar template no WhatsApp.";
+    throw new Error(message);
+  }
+
+  return json.messages?.[0]?.id as string | undefined;
+}

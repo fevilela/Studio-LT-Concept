@@ -1,5 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { after } from "next/server";
 import { getPool } from "@/lib/db";
+import { processBotReply } from "@/lib/anthropic/bot";
 import type { WhatsAppWebhookPayload } from "@/lib/whatsapp/types";
 
 // GET: verificação do webhook exigida pela Meta ao configurar a URL no painel.
@@ -47,8 +49,6 @@ export async function POST(request: Request) {
     return new Response("Invalid signature", { status: 401 });
   }
 
-  // Sempre responde 200 rapidamente depois daqui — a Meta reenvia em retry
-  // agressivo se não receber 200, o que causaria mensagens duplicadas.
   let payload: WhatsAppWebhookPayload;
   try {
     payload = JSON.parse(rawBody);
@@ -56,19 +56,40 @@ export async function POST(request: Request) {
     return new Response("OK", { status: 200 });
   }
 
+  // Grava as mensagens agora (rápido) e devolve 200 imediatamente para a Meta
+  // — ela reenvia agressivamente se não receber 200 a tempo, o que causaria
+  // duplicatas. O bot (chamada à IA + envio da resposta) roda depois, via
+  // after(), sem atrasar essa resposta.
+  let conversationsWithNewMessages: string[] = [];
   try {
-    await processWebhookPayload(payload);
+    conversationsWithNewMessages = await processWebhookPayload(payload);
   } catch (err) {
     console.error("[whatsapp webhook] Failed to process payload", err);
   }
+
+  after(async () => {
+    for (const conversationId of conversationsWithNewMessages) {
+      try {
+        await processBotReply(conversationId);
+      } catch (err) {
+        console.error("[whatsapp webhook] Bot processing failed", conversationId, err);
+      }
+    }
+  });
 
   return new Response("OK", { status: 200 });
 }
 
 async function processWebhookPayload(payload: WhatsAppWebhookPayload) {
-  if (payload.object !== "whatsapp_business_account") return;
+  if (payload.object !== "whatsapp_business_account") return [];
 
   const pool = getPool();
+  const conversationIds: string[] = [];
+
+  const { rows: botConfigRows } = await pool.query<{ active: boolean }>(
+    `select active from bot_config where id = 1`
+  );
+  const botActive = botConfigRows[0]?.active ?? false;
 
   for (const entry of payload.entry ?? []) {
     for (const change of entry.changes ?? []) {
@@ -94,19 +115,20 @@ async function processWebhookPayload(payload: WhatsAppWebhookPayload) {
           );
           const clientId = clientRows[0].id;
 
-          const { rows: convRows } = await client.query<{ id: string; unread_count: number }>(
+          const initialStatus = botActive ? "bot_active" : "human_active";
+          const { rows: convRows } = await client.query<{ id: string }>(
             `insert into whatsapp_conversations (client_id, phone_number, status, last_message_at, unread_count)
-             values ($1, $2, 'human_active', now(), 1)
+             values ($1, $2, $3, now(), 1)
              on conflict (phone_number) do update
                set last_message_at = now(),
                    unread_count = whatsapp_conversations.unread_count + 1,
                    client_id = excluded.client_id
-             returning id, unread_count`,
-            [clientId, phone]
+             returning id`,
+            [clientId, phone, initialStatus]
           );
           const conversationId = convRows[0].id;
 
-          await client.query(
+          const { rowCount } = await client.query(
             `insert into whatsapp_messages
                (conversation_id, direction, sender_type, content, message_type, whatsapp_message_id, raw_payload)
              values ($1, 'inbound', 'client', $2, $3, $4, $5)
@@ -115,6 +137,10 @@ async function processWebhookPayload(payload: WhatsAppWebhookPayload) {
           );
 
           await client.query("commit");
+
+          if (rowCount && rowCount > 0) {
+            conversationIds.push(conversationId);
+          }
         } catch (err) {
           await client.query("rollback");
           throw err;
@@ -131,4 +157,6 @@ async function processWebhookPayload(payload: WhatsAppWebhookPayload) {
       }
     }
   }
+
+  return conversationIds;
 }

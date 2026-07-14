@@ -53,5 +53,21 @@ export async function getConversationById(id: string) {
     [id]
   );
 
-  return { conversation: rows[0], messages };
+  const { rows: toolCalls } = await query<BotToolCall>(
+    `select id, tool_name, input, output, created_at
+     from bot_tool_calls
+     where conversation_id = $1
+     order by created_at asc`,
+    [id]
+  );
+
+  return { conversation: rows[0], messages, toolCalls };
 }
+
+export type BotToolCall = {
+  id: string;
+  tool_name: string;
+  input: unknown;
+  output: unknown;
+  created_at: string;
+};

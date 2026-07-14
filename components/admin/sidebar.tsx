@@ -11,6 +11,8 @@ import {
   Settings,
   ImageIcon,
   MessageCircle,
+  Sparkles,
+  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +21,8 @@ const links = [
   { href: "/admin/orcamentos", label: "Orçamentos", icon: FileText },
   { href: "/admin/agenda", label: "Agenda", icon: CalendarDays },
   { href: "/admin/conversas", label: "Conversas", icon: MessageCircle },
+  { href: "/admin/bot", label: "Bot de IA", icon: Sparkles },
+  { href: "/admin/relatorios", label: "Relatórios", icon: BarChart3 },
   { href: "/admin/clientes", label: "Clientes", icon: Users },
   { href: "/admin/equipe", label: "Equipe", icon: UserRound },
   { href: "/admin/galeria", label: "Galeria", icon: ImageIcon },

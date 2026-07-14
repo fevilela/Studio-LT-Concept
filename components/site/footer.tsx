@@ -92,9 +92,14 @@ export function SiteFooter() {
         </div>
       </div>
 
-      <div className="border-t border-border/60 px-6 py-6 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} {siteConfig.name}. Todos os direitos reservados. Produção
-        especializada em noivas.
+      <div className="flex flex-col items-center gap-2 border-t border-border/60 px-6 py-6 text-center text-xs text-muted-foreground sm:flex-row sm:justify-between">
+        <p>
+          © {new Date().getFullYear()} {siteConfig.name}. Todos os direitos reservados. Produção
+          especializada em noivas.
+        </p>
+        <Link href="/privacidade" className="transition-colors hover:text-primary">
+          Política de Privacidade
+        </Link>
       </div>
     </footer>
   );
