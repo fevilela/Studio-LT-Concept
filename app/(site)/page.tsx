@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Sparkles, Heart, Users, MapPin, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Section, Eyebrow } from "@/components/site/section";
+import { InstagramIcon } from "@/components/site/icons";
 import { siteConfig } from "@/lib/site-config";
 import { getServices, getTeamMembers, getSiteImages } from "@/lib/data";
 import { galleryImageUrl } from "@/lib/format";
@@ -184,8 +185,8 @@ export default async function HomePage() {
           </Button>
         </div>
 
-        <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          {team.slice(0, 4).map((member) => (
+        <div className="mt-12 grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-5">
+          {team.map((member) => (
             <div key={member.id} className="text-center">
               <div className="relative mx-auto aspect-square w-full overflow-hidden rounded-2xl bg-gradient-to-br from-secondary via-accent to-primary/15">
                 {member.photo_url && (
@@ -193,13 +194,23 @@ export default async function HomePage() {
                     src={member.photo_url}
                     alt={member.full_name}
                     fill
-                    sizes="(max-width: 640px) 50vw, 25vw"
+                    sizes="(max-width: 640px) 33vw, 20vw"
                     className="object-cover"
                   />
                 )}
               </div>
               <p className="mt-4 font-serif text-lg text-foreground">{member.full_name}</p>
               <p className="text-xs uppercase tracking-wider text-primary">{member.job_title}</p>
+              {member.instagram_handle && (
+                <a
+                  href={`https://instagram.com/${member.instagram_handle}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-2 inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-primary"
+                >
+                  <InstagramIcon className="size-3.5" />@{member.instagram_handle}
+                </a>
+              )}
             </div>
           ))}
         </div>
