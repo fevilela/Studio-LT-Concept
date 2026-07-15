@@ -35,9 +35,9 @@ export default async function ConversationThreadPage({
   await query(`update whatsapp_conversations set unread_count = 0 where id = $1`, [id]);
 
   return (
-    <div className="flex h-[calc(100vh-6rem)] gap-6">
+    <div className="flex h-[calc(100vh-9rem)] gap-6 sm:h-[calc(100vh-6rem)]">
       <div className="flex flex-1 flex-col">
-        <div className="flex items-center justify-between border-b border-border/60 pb-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-4">
           <div>
             <h1 className="font-serif text-2xl text-foreground">
               {conversation.client_name ?? conversation.phone_number}
@@ -89,7 +89,7 @@ export default async function ConversationThreadPage({
       </div>
 
       {toolCalls.length > 0 && (
-        <aside className="w-72 shrink-0 overflow-y-auto border-l border-border/60 pl-6">
+        <aside className="hidden w-72 shrink-0 overflow-y-auto border-l border-border/60 pl-6 lg:block">
           <p className="mb-3 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
             <Wrench className="size-3.5" /> O que o bot fez
           </p>
