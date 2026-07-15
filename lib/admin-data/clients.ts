@@ -5,18 +5,47 @@ export type ClientListItem = {
   full_name: string;
   phone: string;
   email: string | null;
+  cpf: string | null;
   created_at: string;
   quotes_count: string;
 };
 
-export async function getClients() {
+export type ClientFilters = {
+  search?: string;
+  dateFrom?: string;
+  dateTo?: string;
+};
+
+export async function getClients(filters: ClientFilters = {}) {
+  const conditions: string[] = [];
+  const params: unknown[] = [];
+
+  if (filters.search) {
+    params.push(`%${filters.search}%`);
+    conditions.push(
+      `(c.full_name ilike $${params.length} or c.phone ilike $${params.length} or c.cpf ilike $${params.length})`
+    );
+  }
+  if (filters.dateFrom) {
+    params.push(filters.dateFrom);
+    conditions.push(`c.created_at >= $${params.length}::date`);
+  }
+  if (filters.dateTo) {
+    params.push(filters.dateTo);
+    conditions.push(`c.created_at < ($${params.length}::date + interval '1 day')`);
+  }
+
+  const where = conditions.length > 0 ? `where ${conditions.join(" and ")}` : "";
+
   const { rows } = await query<ClientListItem>(
-    `select c.id, c.full_name, c.phone, c.email, c.created_at,
+    `select c.id, c.full_name, c.phone, c.email, c.cpf, c.created_at,
             count(q.id) as quotes_count
      from clients c
      left join quotes q on q.client_id = c.id
+     ${where}
      group by c.id
-     order by c.created_at desc`
+     order by c.created_at desc`,
+    params
   );
   return rows;
 }
@@ -26,6 +55,7 @@ export type ClientDetail = {
   full_name: string;
   phone: string;
   email: string | null;
+  cpf: string | null;
   notes: string | null;
   created_at: string;
 };
@@ -47,7 +77,7 @@ export type ClientAppointmentHistory = {
 
 export async function getClientById(id: string) {
   const { rows } = await query<ClientDetail>(
-    `select id, full_name, phone, email, notes, created_at from clients where id = $1`,
+    `select id, full_name, phone, email, cpf, notes, created_at from clients where id = $1`,
     [id]
   );
   if (rows.length === 0) return null;
