@@ -121,7 +121,11 @@ export default async function QuoteDetailPage({
                   {quote.client_email}
                 </p>
               )}
-              <StartConversationButton clientId={quote.client_id} clientPhone={quote.client_phone} />
+              <StartConversationButton
+                clientId={quote.client_id}
+                clientPhone={quote.client_phone}
+                clientName={quote.client_name}
+              />
             </CardContent>
           </Card>
 

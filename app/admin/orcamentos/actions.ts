@@ -5,16 +5,22 @@ import { redirect } from "next/navigation";
 import { query, getPool } from "@/lib/db";
 import { requireAuth } from "@/lib/require-auth";
 import { localDateTimeToBrazilISO } from "@/lib/format";
+import { sendWhatsAppTemplateMessage } from "@/lib/whatsapp/client";
 
 const VALID_STATUSES = ["pending", "sent", "approved", "rejected", "expired"] as const;
 
 /**
  * Garante que exista uma conversa de WhatsApp para este cliente e retorna o id,
  * para o botão "Iniciar conversa" abrir a aba Conversas em vez de sair do sistema.
- * Não envia mensagem nenhuma aqui — a Cloud API só permite iniciar contato com
- * um template aprovado, que ainda não temos configurado.
+ * Se a cliente nunca mandou mensagem, tenta enviar o template de primeiro contato
+ * (WHATSAPP_QUOTE_CONTACT_TEMPLATE_NAME) — só funciona depois de aprovado pela Meta;
+ * enquanto isso, falha silenciosamente e a equipe só vê a conversa vazia.
  */
-export async function getOrCreateConversationForClient(clientId: string, clientPhone: string) {
+export async function getOrCreateConversationForClient(
+  clientId: string,
+  clientPhone: string,
+  clientFirstName: string
+) {
   await requireAuth();
 
   const { rows } = await query<{ id: string }>(
@@ -24,8 +30,38 @@ export async function getOrCreateConversationForClient(clientId: string, clientP
      returning id`,
     [clientId, clientPhone]
   );
+  const conversationId = rows[0].id;
 
-  return rows[0].id;
+  const { rows: existingMessages } = await query<{ id: string }>(
+    `select id from whatsapp_messages where conversation_id = $1 limit 1`,
+    [conversationId]
+  );
+
+  const templateName = process.env.WHATSAPP_QUOTE_CONTACT_TEMPLATE_NAME;
+  if (existingMessages.length === 0 && templateName) {
+    try {
+      const waMessageId = await sendWhatsAppTemplateMessage(clientPhone, templateName, "pt_BR", [
+        clientFirstName,
+      ]);
+      await query(
+        `insert into whatsapp_messages
+           (conversation_id, direction, sender_type, content, message_type, whatsapp_message_id, status)
+         values ($1, 'outbound', 'human', $2, 'template', $3, 'sent')`,
+        [
+          conversationId,
+          `[Modelo enviado] Olá ${clientFirstName}! Recebemos seu pedido de orçamento no site e ficaríamos muito felizes em conversar com você sobre os detalhes do seu grande dia. Pode responder essa mensagem quando puder! 💛`,
+          waMessageId ?? null,
+        ]
+      );
+      await query(`update whatsapp_conversations set last_message_at = now() where id = $1`, [
+        conversationId,
+      ]);
+    } catch (err) {
+      console.error("[quotes] Failed to send first-contact template", err);
+    }
+  }
+
+  return conversationId;
 }
 
 export async function updateQuoteStatus(quoteId: string, status: string) {

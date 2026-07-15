@@ -11,9 +11,11 @@ import { getOrCreateConversationForClient } from "@/app/admin/orcamentos/actions
 export function StartConversationButton({
   clientId,
   clientPhone,
+  clientName,
 }: {
   clientId: string;
   clientPhone: string;
+  clientName: string;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -21,7 +23,12 @@ export function StartConversationButton({
   function handleClick() {
     startTransition(async () => {
       try {
-        const conversationId = await getOrCreateConversationForClient(clientId, clientPhone);
+        const firstName = clientName.split(" ")[0];
+        const conversationId = await getOrCreateConversationForClient(
+          clientId,
+          clientPhone,
+          firstName
+        );
         router.push(`/admin/conversas/${conversationId}`);
       } catch {
         toast.error("Não foi possível abrir a conversa.");
