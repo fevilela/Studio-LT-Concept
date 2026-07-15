@@ -7,6 +7,7 @@ export type TeamMemberAdmin = {
   job_title: string | null;
   bio: string | null;
   instagram_handle: string | null;
+  photo_url: string | null;
   display_order: number;
   active: boolean;
 };
@@ -14,7 +15,7 @@ export type TeamMemberAdmin = {
 export async function getAllTeamMembers(search?: string) {
   if (search) {
     const { rows } = await query<TeamMemberAdmin>(
-      `select id, full_name, role, job_title, bio, instagram_handle, display_order, active
+      `select id, full_name, role, job_title, bio, instagram_handle, photo_url, display_order, active
        from team_members
        where full_name ilike $1 or job_title ilike $1
        order by display_order asc, full_name asc`,
@@ -24,7 +25,7 @@ export async function getAllTeamMembers(search?: string) {
   }
 
   const { rows } = await query<TeamMemberAdmin>(
-    `select id, full_name, role, job_title, bio, instagram_handle, display_order, active
+    `select id, full_name, role, job_title, bio, instagram_handle, photo_url, display_order, active
      from team_members order by display_order asc, full_name asc`
   );
   return rows;

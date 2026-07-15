@@ -9,6 +9,18 @@ import { createAdminClient } from "@/lib/supabase/admin";
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/avif"];
 
+function validateImageFile(file: FormDataEntryValue | null): asserts file is File {
+  if (!(file instanceof File) || file.size === 0) {
+    throw new Error("Selecione uma imagem.");
+  }
+  if (file.size > MAX_FILE_SIZE) {
+    throw new Error("A imagem deve ter no máximo 10MB.");
+  }
+  if (!ALLOWED_TYPES.includes(file.type)) {
+    throw new Error("Formato não suportado. Use JPG, PNG, WEBP ou AVIF.");
+  }
+}
+
 export async function uploadGalleryImage(formData: FormData) {
   await requireAuth();
 
@@ -16,15 +28,7 @@ export async function uploadGalleryImage(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   const category = String(formData.get("category") ?? "").trim();
 
-  if (!(file instanceof File) || file.size === 0) {
-    throw new Error("Selecione uma foto.");
-  }
-  if (file.size > MAX_FILE_SIZE) {
-    throw new Error("A foto deve ter no máximo 10MB.");
-  }
-  if (!ALLOWED_TYPES.includes(file.type)) {
-    throw new Error("Formato não suportado. Use JPG, PNG, WEBP ou AVIF.");
-  }
+  validateImageFile(file);
 
   const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
   const path = `${randomUUID()}.${ext}`;
@@ -83,6 +87,51 @@ export async function updateGalleryImageDetails(formData: FormData) {
 
   revalidatePath("/admin/galeria");
   revalidatePath("/galeria");
+}
+
+const SITE_IMAGE_KEYS = ["hero", "about"] as const;
+type SiteImageKey = (typeof SITE_IMAGE_KEYS)[number];
+
+export async function uploadSiteImage(formData: FormData) {
+  await requireAuth();
+
+  const key = String(formData.get("key") ?? "");
+  if (!SITE_IMAGE_KEYS.includes(key as SiteImageKey)) {
+    throw new Error("Imagem inválida.");
+  }
+
+  const file = formData.get("file");
+  validateImageFile(file);
+
+  const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+  const path = `site/${key}-${randomUUID()}.${ext}`;
+
+  const { rows } = await query<{ storage_path: string }>(
+    `select storage_path from site_images where key = $1`,
+    [key]
+  );
+  const previousPath = rows[0]?.storage_path ?? null;
+
+  const admin = createAdminClient();
+  const { error: uploadError } = await admin.storage.from("gallery").upload(path, file, {
+    contentType: file.type,
+  });
+  if (uploadError) {
+    throw new Error("Falha ao enviar a imagem: " + uploadError.message);
+  }
+
+  await query(
+    `insert into site_images (key, storage_path, updated_at) values ($1, $2, now())
+     on conflict (key) do update set storage_path = excluded.storage_path, updated_at = now()`,
+    [key, path]
+  );
+
+  if (previousPath) {
+    await admin.storage.from("gallery").remove([previousPath]);
+  }
+
+  revalidatePath("/admin/galeria");
+  revalidatePath("/");
 }
 
 export async function moveGalleryImage(id: string, direction: "up" | "down") {

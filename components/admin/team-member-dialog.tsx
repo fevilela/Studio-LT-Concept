@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Image from "next/image";
 import { Plus, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -66,6 +67,19 @@ export function TeamMemberDialog({ member }: { member?: TeamMemberAdmin }) {
         </DialogHeader>
         <form action={handleSubmit} className="space-y-4">
           {member && <input type="hidden" name="id" value={member.id} />}
+
+          <div className="space-y-2">
+            <Label htmlFor="photo">Foto</Label>
+            {member?.photo_url && (
+              <div className="relative size-20 overflow-hidden rounded-full bg-secondary">
+                <Image src={member.photo_url} alt={member.full_name} fill className="object-cover" />
+              </div>
+            )}
+            <Input id="photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp,image/avif" />
+            <p className="text-xs text-muted-foreground">
+              {member?.photo_url ? "Envie uma nova foto para substituir a atual." : "Opcional."}
+            </p>
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="full_name">Nome completo</Label>

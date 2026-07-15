@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { Section, Eyebrow } from "@/components/site/section";
 import { InstagramIcon } from "@/components/site/icons";
 import { getTeamMembers } from "@/lib/data";
@@ -27,7 +28,17 @@ export default async function EquipePage() {
       <div className="mt-14 grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
         {team.map((member) => (
           <div key={member.id} className="text-center">
-            <div className="mx-auto aspect-square w-full overflow-hidden rounded-2xl bg-gradient-to-br from-secondary via-accent to-primary/15" />
+            <div className="relative mx-auto aspect-square w-full overflow-hidden rounded-2xl bg-gradient-to-br from-secondary via-accent to-primary/15">
+              {member.photo_url && (
+                <Image
+                  src={member.photo_url}
+                  alt={member.full_name}
+                  fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  className="object-cover"
+                />
+              )}
+            </div>
             <p className="mt-5 font-serif text-xl text-foreground">{member.full_name}</p>
             <p className="text-xs uppercase tracking-wider text-primary">{member.job_title}</p>
             <p className="mx-auto mt-3 max-w-xs text-sm leading-relaxed text-muted-foreground">

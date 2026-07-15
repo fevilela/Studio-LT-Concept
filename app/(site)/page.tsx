@@ -1,9 +1,11 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Sparkles, Heart, Users, MapPin, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Section, Eyebrow } from "@/components/site/section";
 import { siteConfig } from "@/lib/site-config";
-import { getServices, getTeamMembers } from "@/lib/data";
+import { getServices, getTeamMembers, getSiteImages } from "@/lib/data";
+import { galleryImageUrl } from "@/lib/format";
 
 export const revalidate = 60;
 
@@ -17,7 +19,13 @@ const highlights = [
 ];
 
 export default async function HomePage() {
-  const [services, team] = await Promise.all([getServices(), getTeamMembers()]);
+  const [services, team, siteImages] = await Promise.all([
+    getServices(),
+    getTeamMembers(),
+    getSiteImages(),
+  ]);
+  const heroUrl = siteImages.hero ? galleryImageUrl(siteImages.hero) : null;
+  const aboutUrl = siteImages.about ? galleryImageUrl(siteImages.about) : null;
 
   return (
     <>
@@ -57,11 +65,23 @@ export default async function HomePage() {
           </div>
 
           <div className="relative aspect-[4/5] w-full overflow-hidden rounded-3xl bg-gradient-to-br from-accent via-secondary to-primary/20">
-            <div className="absolute inset-0 flex items-center justify-center">
-              <p className="px-10 text-center font-serif text-2xl italic text-foreground/70">
-                &ldquo;Trabalhamos com sonhos, e eles são o nosso bem mais valioso.&rdquo;
-              </p>
-            </div>
+            {heroUrl && (
+              <Image
+                src={heroUrl}
+                alt="Studio LT Concept"
+                fill
+                priority
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                className="object-cover"
+              />
+            )}
+            {!heroUrl && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <p className="px-10 text-center font-serif text-2xl italic text-foreground/70">
+                  &ldquo;Trabalhamos com sonhos, e eles são o nosso bem mais valioso.&rdquo;
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </Section>
@@ -86,7 +106,17 @@ export default async function HomePage() {
       {/* QUEM SOMOS PREVIEW */}
       <Section>
         <div className="grid items-center gap-14 lg:grid-cols-2">
-          <div className="order-2 aspect-square w-full overflow-hidden rounded-3xl bg-gradient-to-tr from-primary/15 via-accent to-secondary lg:order-1" />
+          <div className="relative order-2 aspect-square w-full overflow-hidden rounded-3xl bg-gradient-to-tr from-primary/15 via-accent to-secondary lg:order-1">
+            {aboutUrl && (
+              <Image
+                src={aboutUrl}
+                alt="Thainá Souza"
+                fill
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                className="object-cover"
+              />
+            )}
+          </div>
           <div className="order-1 lg:order-2">
             <Eyebrow>Quem Somos</Eyebrow>
             <h2 className="mt-4 font-serif text-4xl text-foreground">
@@ -157,7 +187,17 @@ export default async function HomePage() {
         <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {team.slice(0, 4).map((member) => (
             <div key={member.id} className="text-center">
-              <div className="mx-auto aspect-square w-full overflow-hidden rounded-2xl bg-gradient-to-br from-secondary via-accent to-primary/15" />
+              <div className="relative mx-auto aspect-square w-full overflow-hidden rounded-2xl bg-gradient-to-br from-secondary via-accent to-primary/15">
+                {member.photo_url && (
+                  <Image
+                    src={member.photo_url}
+                    alt={member.full_name}
+                    fill
+                    sizes="(max-width: 640px) 50vw, 25vw"
+                    className="object-cover"
+                  />
+                )}
+              </div>
               <p className="mt-4 font-serif text-lg text-foreground">{member.full_name}</p>
               <p className="text-xs uppercase tracking-wider text-primary">{member.job_title}</p>
             </div>
