@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { query, getPool } from "@/lib/db";
 import { quoteFormSchema } from "@/lib/validations/quote";
 import { normalizeBrazilPhone } from "@/lib/phone";
 import { createClient } from "@/lib/supabase/server";
 import { ensureClientProfile } from "@/lib/ensure-client-profile";
+import { sendNewQuoteNotificationEmail } from "@/lib/email";
 
 type ServiceRow = { id: string; name: string; base_price: string };
 
@@ -91,6 +92,17 @@ export async function POST(request: Request) {
     }
 
     await client.query("commit");
+
+    after(() => {
+      sendNewQuoteNotificationEmail({
+        quoteId,
+        fullName: data.full_name,
+        phone,
+        eventDate: data.event_date,
+        serviceNames: servicesRows.map((s) => s.name),
+        total: totalValue,
+      }).catch((err) => console.error("[quotes] Falha ao enviar e-mail de notificação", err));
+    });
 
     return NextResponse.json({ success: true, quoteId, total: totalValue });
   } catch (err) {
