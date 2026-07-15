@@ -21,15 +21,26 @@ export function LoginForm({ nextPath }: { nextPath?: string }) {
     setError(null);
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data: signInData, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-    if (error) {
+    if (error || !signInData.user) {
       setError("E-mail ou senha inválidos.");
       setLoading(false);
       return;
     }
 
-    router.push(nextPath ?? "/admin");
+    // Contas da equipe sempre vão para o painel admin, não importa qual
+    // tela de login foi usada para entrar.
+    const { data: teamMember } = await supabase
+      .from("team_members")
+      .select("id")
+      .eq("auth_user_id", signInData.user.id)
+      .maybeSingle();
+
+    router.push(teamMember ? "/admin" : (nextPath ?? "/orcamento"));
     router.refresh();
   }
 
