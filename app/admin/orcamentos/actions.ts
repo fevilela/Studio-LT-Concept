@@ -8,6 +8,26 @@ import { localDateTimeToBrazilISO } from "@/lib/format";
 
 const VALID_STATUSES = ["pending", "sent", "approved", "rejected", "expired"] as const;
 
+/**
+ * Garante que exista uma conversa de WhatsApp para este cliente e retorna o id,
+ * para o botão "Iniciar conversa" abrir a aba Conversas em vez de sair do sistema.
+ * Não envia mensagem nenhuma aqui — a Cloud API só permite iniciar contato com
+ * um template aprovado, que ainda não temos configurado.
+ */
+export async function getOrCreateConversationForClient(clientId: string, clientPhone: string) {
+  await requireAuth();
+
+  const { rows } = await query<{ id: string }>(
+    `insert into whatsapp_conversations (client_id, phone_number, status)
+     values ($1, $2, 'human_active')
+     on conflict (phone_number) do update set client_id = excluded.client_id
+     returning id`,
+    [clientId, clientPhone]
+  );
+
+  return rows[0].id;
+}
+
 export async function updateQuoteStatus(quoteId: string, status: string) {
   await requireAuth();
 

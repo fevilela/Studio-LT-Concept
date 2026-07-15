@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { Wrench } from "lucide-react";
+import { Wrench, AlertTriangle } from "lucide-react";
 import { query } from "@/lib/db";
 import { getConversationById } from "@/lib/admin-data/conversations";
 import { formatDateTime } from "@/lib/format";
@@ -33,6 +33,8 @@ export default async function ConversationThreadPage({
   const { conversation, messages, toolCalls } = result;
 
   await query(`update whatsapp_conversations set unread_count = 0 where id = $1`, [id]);
+
+  const hasInboundMessage = messages.some((m) => m.direction === "inbound");
 
   return (
     <div className="flex h-[calc(100vh-9rem)] gap-6 sm:h-[calc(100vh-6rem)]">
@@ -81,6 +83,18 @@ export default async function ConversationThreadPage({
         </div>
 
         <div className="border-t border-border/60 pt-4">
+          {!hasInboundMessage && (
+            <div className="mb-3 flex items-start gap-2 rounded-lg bg-accent/60 p-3 text-xs text-accent-foreground">
+              <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
+              <p>
+                Essa cliente ainda não mandou nenhuma mensagem por aqui. A Meta só permite a
+                empresa enviar a primeira mensagem através de um modelo aprovado (ainda não
+                configurado) — por enquanto, é preciso que ela mande uma mensagem primeiro (ou
+                fale com ela por outro canal e peça pra ela chamar no WhatsApp) antes de
+                responder por aqui.
+              </p>
+            </div>
+          )}
           <ConversationReplyForm
             conversationId={conversation.id}
             phoneNumber={conversation.phone_number}

@@ -4,10 +4,3 @@ export function normalizeBrazilPhone(raw: string) {
   if (digits.startsWith("55")) return `+${digits}`;
   return `+55${digits}`;
 }
-
-/** Monta um link wa.me para abrir uma conversa com um telefone específico (não o número do negócio). */
-export function buildWaMeLink(phone: string, message?: string) {
-  const digits = phone.replace(/\D/g, "");
-  const base = `https://wa.me/${digits}`;
-  return message ? `${base}?text=${encodeURIComponent(message)}` : base;
-}
