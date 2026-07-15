@@ -35,7 +35,7 @@ export async function saveService(formData: FormData) {
     );
   }
 
-  revalidatePath("/admin/configuracoes");
+  revalidatePath("/admin/servicos");
   revalidatePath("/servicos");
   revalidatePath("/orcamento");
   revalidatePath("/");
@@ -44,7 +44,7 @@ export async function saveService(formData: FormData) {
 export async function toggleServiceActive(id: string, active: boolean) {
   await requireAuth();
   await query(`update services set active = $1 where id = $2`, [active, id]);
-  revalidatePath("/admin/configuracoes");
+  revalidatePath("/admin/servicos");
   revalidatePath("/servicos");
   revalidatePath("/orcamento");
   revalidatePath("/");

@@ -20,10 +20,12 @@ export function ConvertToAppointmentForm({
   quoteId,
   clientId,
   teamMembers,
+  defaultStartTime,
 }: {
   quoteId: string;
   clientId: string;
   teamMembers: TeamMember[];
+  defaultStartTime?: string;
 }) {
   const [isPending, startTransition] = useTransition();
 
@@ -60,7 +62,13 @@ export function ConvertToAppointmentForm({
 
       <div className="space-y-2">
         <Label htmlFor="start_time">Data e horário</Label>
-        <Input id="start_time" name="start_time" type="datetime-local" required />
+        <Input
+          id="start_time"
+          name="start_time"
+          type="datetime-local"
+          defaultValue={defaultStartTime}
+          required
+        />
       </div>
 
       <div className="space-y-2">

@@ -3,7 +3,7 @@
 import { useTransition } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
-import { toggleServiceActive } from "@/app/admin/configuracoes/actions";
+import { toggleServiceActive } from "@/app/admin/servicos/actions";
 
 export function ServiceActiveToggle({ id, active }: { id: string; active: boolean }) {
   const [isPending, startTransition] = useTransition();

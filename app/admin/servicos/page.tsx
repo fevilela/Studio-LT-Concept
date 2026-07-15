@@ -20,14 +20,14 @@ const categoryLabels: Record<string, string> = {
   pacote: "Pacote Completo",
 };
 
-export default async function ConfiguracoesPage() {
+export default async function ServicosPage() {
   const services = await getAllServices();
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="font-serif text-3xl text-foreground">Configurações</h1>
+          <h1 className="font-serif text-3xl text-foreground">Serviços</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Serviços e preços exibidos no site e usados nos orçamentos.
           </p>

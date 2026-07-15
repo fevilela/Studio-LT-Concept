@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getQuoteById } from "@/lib/admin-data/quotes";
 import { getTeamMembers } from "@/lib/data";
-import { formatDate, formatPrice } from "@/lib/format";
+import { formatDate, formatPrice, toDateTimeLocalValue } from "@/lib/format";
 import { QuoteStatusActions } from "@/components/admin/quote-status-actions";
 import { ConvertToAppointmentForm } from "@/components/admin/convert-to-appointment-form";
 import { StartConversationButton } from "@/components/admin/start-conversation-button";
@@ -42,6 +42,10 @@ export default async function QuoteDetailPage({
         </div>
         <QuoteStatusActions quoteId={quote.id} status={quote.status} />
       </div>
+      <p className="-mt-4 text-xs text-muted-foreground">
+        Aprovar só muda o status — para colocar na agenda de verdade, preencha
+        &quot;Agendar atendimento&quot; ao lado (isso também aprova automaticamente).
+      </p>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
@@ -138,6 +142,7 @@ export default async function QuoteDetailPage({
                 quoteId={quote.id}
                 clientId={quote.client_id}
                 teamMembers={teamMembers.map((t) => ({ id: t.id, full_name: t.full_name }))}
+                defaultStartTime={toDateTimeLocalValue(quote.event_date, quote.event_time)}
               />
             </CardContent>
           </Card>

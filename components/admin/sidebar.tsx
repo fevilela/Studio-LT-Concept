@@ -8,7 +8,7 @@ import {
   CalendarDays,
   Users,
   UserRound,
-  Settings,
+  Tag,
   ImageIcon,
   MessageCircle,
   Sparkles,
@@ -26,7 +26,7 @@ const links = [
   { href: "/admin/clientes", label: "Clientes", icon: Users },
   { href: "/admin/equipe", label: "Equipe", icon: UserRound },
   { href: "/admin/galeria", label: "Galeria", icon: ImageIcon },
-  { href: "/admin/configuracoes", label: "Configurações", icon: Settings },
+  { href: "/admin/servicos", label: "Serviços", icon: Tag },
 ];
 
 export function AdminSidebar() {

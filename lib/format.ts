@@ -23,3 +23,15 @@ export function formatDateTime(value: string | Date) {
 export function localDateTimeToBrazilISO(value: string) {
   return `${value}:00-03:00`;
 }
+
+/**
+ * Monta um valor pronto para um <input type="datetime-local"> a partir de uma
+ * data (coluna `date`, sem timezone — lida em UTC para não deslocar o dia) e
+ * um horário opcional (coluna `time`, formato "HH:MM:SS"). Sem horário, usa
+ * 13h como padrão (início do expediente).
+ */
+export function toDateTimeLocalValue(date: string | Date, time?: string | null) {
+  const dateStr = new Date(date).toISOString().slice(0, 10);
+  const timeStr = time ? time.slice(0, 5) : "13:00";
+  return `${dateStr}T${timeStr}`;
+}

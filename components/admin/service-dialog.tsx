@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { saveService } from "@/app/admin/configuracoes/actions";
+import { saveService } from "@/app/admin/servicos/actions";
 import type { ServiceAdmin } from "@/lib/admin-data/services";
 
 const categories = [
