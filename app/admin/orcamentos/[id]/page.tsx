@@ -1,10 +1,13 @@
 import { notFound } from "next/navigation";
 import { Phone, Mail, MapPin, Calendar, Clock, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getQuoteById } from "@/lib/admin-data/quotes";
 import { getTeamMembers } from "@/lib/data";
 import { formatDate, formatPrice } from "@/lib/format";
+import { buildWaMeLink } from "@/lib/phone";
+import { WhatsAppIcon } from "@/components/site/icons";
 import { QuoteStatusActions } from "@/components/admin/quote-status-actions";
 import { ConvertToAppointmentForm } from "@/components/admin/convert-to-appointment-form";
 
@@ -120,6 +123,23 @@ export default async function QuoteDetailPage({
                   {quote.client_email}
                 </p>
               )}
+              <Button
+                className="mt-2 w-full bg-[#25D366] text-white hover:bg-[#1ebe5a]"
+                nativeButton={false}
+                render={
+                  <a
+                    href={buildWaMeLink(
+                      quote.client_phone,
+                      `Olá ${quote.client_name.split(" ")[0]}! Vi seu pedido de orçamento com a gente e queria conversar sobre os detalhes 💛`
+                    )}
+                    target="_blank"
+                    rel="noreferrer"
+                  />
+                }
+              >
+                <WhatsAppIcon className="size-4" />
+                Iniciar conversa no WhatsApp
+              </Button>
             </CardContent>
           </Card>
 

@@ -1,7 +1,15 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+const PUBLIC_ACCOUNT_PATHS = ["/conta/entrar", "/conta/cadastro"];
+
 export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  if (PUBLIC_ACCOUNT_PATHS.some((p) => pathname.startsWith(p))) {
+    return NextResponse.next({ request });
+  }
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -27,15 +35,30 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const isAdminRoute = pathname.startsWith("/admin");
+  const loginPath = isAdminRoute ? "/login" : "/conta/entrar";
+
   if (!user) {
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("next", request.nextUrl.pathname);
+    const loginUrl = new URL(loginPath, request.url);
+    loginUrl.searchParams.set("next", pathname);
     return NextResponse.redirect(loginUrl);
+  }
+
+  if (isAdminRoute) {
+    const { data: teamMember } = await supabase
+      .from("team_members")
+      .select("id")
+      .eq("auth_user_id", user.id)
+      .maybeSingle();
+
+    if (!teamMember) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
   }
 
   return response;
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/orcamento", "/conta/:path*"],
 };

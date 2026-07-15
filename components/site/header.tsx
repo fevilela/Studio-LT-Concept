@@ -36,8 +36,8 @@ export function SiteHeader() {
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
-          <Button variant="ghost" size="sm" nativeButton={false} render={<Link href="/login" />}>
-            Fazer Login
+          <Button variant="ghost" size="sm" nativeButton={false} render={<Link href="/conta/entrar" />}>
+            Minha Conta
           </Button>
           <Button size="sm" nativeButton={false} render={<Link href="/orcamento" />}>
             Fazer Orçamento
@@ -68,11 +68,11 @@ export function SiteHeader() {
                 </Link>
               ))}
               <Link
-                href="/login"
+                href="/conta/entrar"
                 onClick={() => setOpen(false)}
                 className="rounded-md px-2 py-3 text-sm uppercase tracking-wider text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
               >
-                Fazer Login
+                Minha Conta
               </Link>
               <Button
                 className="mt-3"

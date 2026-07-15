@@ -1,16 +1,33 @@
 import { NextResponse } from "next/server";
 import { query, getPool } from "@/lib/db";
 import { quoteFormSchema } from "@/lib/validations/quote";
-
-function normalizePhone(raw: string) {
-  const digits = raw.replace(/\D/g, "");
-  if (digits.startsWith("55")) return `+${digits}`;
-  return `+55${digits}`;
-}
+import { normalizeBrazilPhone } from "@/lib/phone";
+import { createClient } from "@/lib/supabase/server";
+import { ensureClientProfile } from "@/lib/ensure-client-profile";
 
 type ServiceRow = { id: string; name: string; base_price: string };
 
 export async function POST(request: Request) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json(
+      { error: "Você precisa entrar na sua conta para fazer um orçamento." },
+      { status: 401 }
+    );
+  }
+
+  const clientProfile = await ensureClientProfile(user);
+  if (!clientProfile) {
+    return NextResponse.json(
+      { error: "Não foi possível encontrar seu cadastro. Tente sair e entrar novamente." },
+      { status: 400 }
+    );
+  }
+
   const body = await request.json().catch(() => null);
   const parsed = quoteFormSchema.safeParse(body);
 
@@ -22,7 +39,7 @@ export async function POST(request: Request) {
   }
 
   const data = parsed.data;
-  const phone = normalizePhone(data.phone);
+  const phone = normalizeBrazilPhone(data.phone);
 
   const { rows: servicesRows } = await query<ServiceRow>(
     `select id, name, base_price from services where id = any($1::uuid[]) and active = true`,
@@ -42,16 +59,11 @@ export async function POST(request: Request) {
   try {
     await client.query("begin");
 
-    const { rows: clientRows } = await client.query<{ id: string }>(
-      `insert into clients (full_name, phone, email)
-       values ($1, $2, nullif($3, ''))
-       on conflict (phone) do update
-         set full_name = excluded.full_name,
-             email = coalesce(excluded.email, clients.email)
-       returning id`,
-      [data.full_name, phone, data.email ?? ""]
+    await client.query(
+      `update clients set full_name = $1, phone = $2, email = coalesce(nullif($3, ''), email)
+       where id = $4`,
+      [data.full_name, phone, data.email ?? "", clientProfile.id]
     );
-    const clientId = clientRows[0].id;
 
     const { rows: quoteRows } = await client.query<{ id: string }>(
       `insert into quotes
@@ -59,7 +71,7 @@ export async function POST(request: Request) {
        values ($1, $2, nullif($3, '')::time, nullif($4, ''), $5, $6, nullif($7, ''), 'public_form')
        returning id`,
       [
-        clientId,
+        clientProfile.id,
         data.event_date,
         data.event_time ?? "",
         data.event_location ?? "",

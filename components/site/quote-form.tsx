@@ -14,7 +14,15 @@ import { quoteFormSchema, type QuoteFormValues } from "@/lib/validations/quote";
 import type { Service } from "@/lib/data";
 import { formatPrice } from "@/lib/format";
 
-export function QuoteForm({ services }: { services: Service[] }) {
+type QuoteFormDefaults = { full_name: string; phone: string; email: string };
+
+export function QuoteForm({
+  services,
+  defaultValues,
+}: {
+  services: Service[];
+  defaultValues?: QuoteFormDefaults;
+}) {
   const [submitted, setSubmitted] = useState(false);
 
   const {
@@ -28,6 +36,9 @@ export function QuoteForm({ services }: { services: Service[] }) {
     defaultValues: {
       number_of_people: 1,
       service_ids: [],
+      full_name: defaultValues?.full_name ?? "",
+      phone: defaultValues?.phone ?? "",
+      email: defaultValues?.email ?? "",
     },
   });
 

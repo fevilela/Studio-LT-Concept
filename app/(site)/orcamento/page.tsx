@@ -1,18 +1,28 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { Section, Eyebrow } from "@/components/site/section";
 import { QuoteForm } from "@/components/site/quote-form";
 import { getServices } from "@/lib/data";
 import { siteConfig } from "@/lib/site-config";
 import { Phone, Mail, MapPin, Clock } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
+import { ensureClientProfile } from "@/lib/ensure-client-profile";
 
 export const metadata: Metadata = {
   title: "Orçamento | Thainá Souza",
   description: "Faça seu orçamento personalizado para o seu grande dia.",
 };
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export default async function OrcamentoPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/conta/entrar?next=/orcamento");
+
+  const profile = await ensureClientProfile(user);
   const services = await getServices();
 
   return (
@@ -29,7 +39,14 @@ export default async function OrcamentoPage() {
           </p>
 
           <div className="mt-10">
-            <QuoteForm services={services} />
+            <QuoteForm
+              services={services}
+              defaultValues={
+                profile
+                  ? { full_name: profile.full_name, phone: profile.phone, email: profile.email ?? "" }
+                  : undefined
+              }
+            />
           </div>
         </div>
 
