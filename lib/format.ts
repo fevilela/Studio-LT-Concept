@@ -35,3 +35,7 @@ export function toDateTimeLocalValue(date: string | Date, time?: string | null) 
   const timeStr = time ? time.slice(0, 5) : "13:00";
   return `${dateStr}T${timeStr}`;
 }
+
+export function galleryImageUrl(storagePath: string) {
+  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/gallery/${storagePath}`;
+}

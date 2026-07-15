@@ -33,3 +33,18 @@ export async function getTeamMembers() {
   );
   return rows;
 }
+
+export type GalleryImage = {
+  id: string;
+  title: string | null;
+  category: string | null;
+  storage_path: string;
+};
+
+export async function getGalleryImages() {
+  const { rows } = await query<GalleryImage>(
+    `select id, title, category, storage_path
+     from gallery_images where active = true order by display_order asc, created_at desc`
+  );
+  return rows;
+}
