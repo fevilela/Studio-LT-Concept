@@ -11,6 +11,7 @@ import { ensureClientProfile } from "@/lib/ensure-client-profile";
 import { getMyQuotes, getMyAppointments } from "@/lib/client-data";
 import { formatDate, formatDateTime, formatPrice } from "@/lib/format";
 import { CustomerLogoutButton } from "@/components/site/customer-logout-button";
+import { query } from "@/lib/db";
 
 export const metadata: Metadata = {
   title: "Minha Conta | Thainá Souza",
@@ -32,6 +33,14 @@ export default async function MinhaContaPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/conta/entrar");
+
+  // Contas da equipe (admin/staff) não são clientes — mandar direto pro
+  // painel em vez de tentar montar um perfil de cliente que nunca existirá.
+  const { rows: teamRows } = await query<{ id: string }>(
+    `select id from team_members where auth_user_id = $1`,
+    [user.id]
+  );
+  if (teamRows.length > 0) redirect("/admin");
 
   const profile = await ensureClientProfile(user);
   if (!profile) {
