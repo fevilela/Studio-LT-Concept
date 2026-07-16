@@ -42,10 +42,12 @@ export async function GET(request: Request) {
   const results = [];
   for (const appt of dueAppointments) {
     try {
-      await sendWhatsAppTemplateMessage(appt.client_phone, templateName, "pt_BR", [
-        appt.client_name,
-        formatDateTime(appt.start_time),
-      ]);
+      // Nomes de variável de exemplo — ajustar para bater com o template real
+      // quando ele for criado e aprovado no Business Manager.
+      await sendWhatsAppTemplateMessage(appt.client_phone, templateName, "pt_BR", {
+        nome_cliente: appt.client_name,
+        data_horario: formatDateTime(appt.start_time),
+      });
       await query(`update appointments set reminder_sent_at = now() where id = $1`, [appt.id]);
       results.push({ id: appt.id, sent: true });
     } catch (err) {

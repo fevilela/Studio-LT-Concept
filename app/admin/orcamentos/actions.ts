@@ -40,9 +40,9 @@ export async function getOrCreateConversationForClient(
   const templateName = process.env.WHATSAPP_QUOTE_CONTACT_TEMPLATE_NAME;
   if (existingMessages.length === 0 && templateName) {
     try {
-      const waMessageId = await sendWhatsAppTemplateMessage(clientPhone, templateName, "pt_BR", [
-        clientFirstName,
-      ]);
+      const waMessageId = await sendWhatsAppTemplateMessage(clientPhone, templateName, "pt_BR", {
+        nome_cliente: clientFirstName,
+      });
       await query(
         `insert into whatsapp_messages
            (conversation_id, direction, sender_type, content, message_type, whatsapp_message_id, status)

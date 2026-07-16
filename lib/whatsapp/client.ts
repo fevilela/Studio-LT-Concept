@@ -48,14 +48,20 @@ export async function sendWhatsAppTextMessage(to: string, body: string) {
  * Envia uma mensagem de template pré-aprovado pela Meta — necessário para iniciar
  * contato fora da janela de 24h (ex.: lembretes de agendamento). O nome do template
  * e seus parâmetros dependem do que for cadastrado e aprovado no Business Manager.
+ *
+ * `parameters` usa nomes de variável (ex.: `{ nome_cliente: "Maria" }`), não posição
+ * — é a convenção atual do Business Manager para templates novos (variáveis tipo
+ * `{{nome_cliente}}` em vez de `{{1}}`).
  */
 export async function sendWhatsAppTemplateMessage(
   to: string,
   templateName: string,
   languageCode: string,
-  parameters: string[] = []
+  parameters: Record<string, string> = {}
 ) {
   const { accessToken, phoneNumberId } = getConfig();
+
+  const parameterEntries = Object.entries(parameters);
 
   const res = await fetch(
     `https://graph.facebook.com/${GRAPH_VERSION}/${phoneNumberId}/messages`,
@@ -72,11 +78,15 @@ export async function sendWhatsAppTemplateMessage(
         template: {
           name: templateName,
           language: { code: languageCode },
-          components: parameters.length
+          components: parameterEntries.length
             ? [
                 {
                   type: "body",
-                  parameters: parameters.map((text) => ({ type: "text", text })),
+                  parameters: parameterEntries.map(([parameter_name, text]) => ({
+                    type: "text",
+                    parameter_name,
+                    text,
+                  })),
                 },
               ]
             : undefined,
