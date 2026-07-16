@@ -38,11 +38,11 @@ export default async function ConversasPage() {
           <Link
             key={c.id}
             href={`/admin/conversas/${c.id}`}
-            className="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-card p-4 transition-colors hover:bg-accent"
+            className="flex items-center justify-between gap-4 overflow-hidden rounded-xl border border-border/60 bg-card p-4 transition-colors hover:bg-accent"
           >
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <p className="truncate font-medium text-foreground">
+            <div className="min-w-0 flex-1 overflow-hidden">
+              <div className="flex min-w-0 items-center gap-2">
+                <p className="min-w-0 truncate font-medium text-foreground">
                   {c.client_name ?? c.phone_number}
                 </p>
                 {c.unread_count > 0 && (
