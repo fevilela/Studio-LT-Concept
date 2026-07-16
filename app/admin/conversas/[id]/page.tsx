@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Wrench, AlertTriangle, FileText, Calendar, Users } from "lucide-react";
+import { Wrench, AlertTriangle, FileText, Calendar, Clock, Users, MapPin } from "lucide-react";
 import { query } from "@/lib/db";
 import { getConversationById } from "@/lib/admin-data/conversations";
 import { formatDate, formatDateTime, formatPrice } from "@/lib/format";
@@ -30,6 +30,12 @@ const quoteStatusLabels: Record<string, string> = {
   approved: "Aprovado",
   rejected: "Recusado",
   expired: "Expirado",
+};
+
+const createdByLabels: Record<string, string> = {
+  public_form: "Formulário do site",
+  bot: "Bot de IA",
+  admin: "Painel admin",
 };
 
 export default async function ConversationThreadPage({
@@ -131,37 +137,70 @@ export default async function ConversationThreadPage({
               </p>
               <div className="space-y-3">
                 {quotes.map((q) => (
-                  <Link
-                    key={q.id}
-                    href={`/admin/orcamentos/${q.id}`}
-                    className="block rounded-lg border border-border/60 bg-card p-3 text-xs transition-colors hover:bg-accent"
-                  >
+                  <div key={q.id} className="rounded-lg border border-border/60 bg-card p-3 text-xs">
                     <div className="flex items-center justify-between gap-2">
                       <span className="flex items-center gap-1.5 font-medium text-foreground">
                         <Calendar className="size-3.5 text-primary" /> {formatDate(q.event_date)}
                       </span>
                       <Badge variant="secondary">{quoteStatusLabels[q.status] ?? q.status}</Badge>
                     </div>
-                    {q.service_names && (
-                      <p className="mt-2 text-muted-foreground">{q.service_names}</p>
-                    )}
-                    <div className="mt-2 flex items-center justify-between text-muted-foreground">
-                      <span className="flex items-center gap-1.5">
+
+                    <div className="mt-2 space-y-1 text-muted-foreground">
+                      {q.event_time && (
+                        <p className="flex items-center gap-1.5">
+                          <Clock className="size-3.5" /> {q.event_time.slice(0, 5)}
+                        </p>
+                      )}
+                      <p className="flex items-center gap-1.5">
                         <Users className="size-3.5" /> {q.number_of_people} pessoa(s)
-                      </span>
-                      <span className="font-serif text-sm text-primary">
-                        {q.total_value ? formatPrice(q.total_value) : "—"}
-                      </span>
+                      </p>
+                      {q.event_location && (
+                        <p className="flex items-center gap-1.5">
+                          <MapPin className="size-3.5 shrink-0" />
+                          <span className="truncate">{q.event_location}</span>
+                        </p>
+                      )}
                     </div>
-                    {q.event_location && (
-                      <p className="mt-1 truncate text-muted-foreground">{q.event_location}</p>
+
+                    {q.items.length > 0 && (
+                      <div className="mt-3 space-y-1 border-t border-border/60 pt-2">
+                        {q.items.map((item) => (
+                          <div key={item.id} className="flex items-center justify-between">
+                            <span className="text-foreground">
+                              {item.name}
+                              {item.quantity > 1 && ` × ${item.quantity}`}
+                            </span>
+                            <span className="text-muted-foreground">
+                              {formatPrice(item.subtotal)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
                     )}
+
+                    <div className="mt-2 flex items-center justify-between border-t border-border/60 pt-2 font-serif text-sm text-primary">
+                      <span>Total</span>
+                      <span>{q.total_value ? formatPrice(q.total_value) : "—"}</span>
+                    </div>
+
                     {q.notes && (
                       <p className="mt-2 border-t border-border/60 pt-2 text-muted-foreground">
                         {q.notes}
                       </p>
                     )}
-                  </Link>
+
+                    <div className="mt-2 flex items-center justify-between border-t border-border/60 pt-2 text-[10px] text-muted-foreground">
+                      <span>{createdByLabels[q.created_by] ?? q.created_by}</span>
+                      <span>Recebido em {formatDate(q.created_at)}</span>
+                    </div>
+
+                    <Link
+                      href={`/admin/orcamentos/${q.id}`}
+                      className="mt-3 block text-center text-primary hover:underline"
+                    >
+                      Ver orçamento completo
+                    </Link>
+                  </div>
                 ))}
               </div>
             </div>

@@ -35,6 +35,15 @@ export type ConversationMessage = {
   created_at: string;
 };
 
+export type ConversationQuoteItem = {
+  id: string;
+  quote_id: string;
+  name: string;
+  quantity: number;
+  unit_price: string;
+  subtotal: string;
+};
+
 export type ConversationQuote = {
   id: string;
   event_date: string;
@@ -44,8 +53,9 @@ export type ConversationQuote = {
   total_value: string | null;
   status: string;
   notes: string | null;
-  service_names: string | null;
+  created_by: string;
   created_at: string;
+  items: ConversationQuoteItem[];
 };
 
 export async function getConversationById(id: string) {
@@ -76,21 +86,31 @@ export async function getConversationById(id: string) {
   );
 
   const clientId = rows[0].client_id;
-  const { rows: quotes } = clientId
-    ? await query<ConversationQuote>(
-        `select q.id, q.event_date, q.event_time, q.event_location, q.number_of_people,
-                q.total_value, q.status, q.notes, q.created_at,
-                string_agg(coalesce(s.name, e.name), ', ' order by coalesce(s.name, e.name)) as service_names
-         from quotes q
-         left join quote_items qi on qi.quote_id = q.id
+  const quotes: ConversationQuote[] = [];
+
+  if (clientId) {
+    const { rows: quoteRows } = await query<Omit<ConversationQuote, "items">>(
+      `select id, event_date, event_time, event_location, number_of_people,
+              total_value, status, notes, created_by, created_at
+       from quotes where client_id = $1 order by created_at desc`,
+      [clientId]
+    );
+
+    if (quoteRows.length > 0) {
+      const { rows: items } = await query<ConversationQuoteItem>(
+        `select qi.id, qi.quote_id, coalesce(s.name, e.name) as name, qi.quantity, qi.unit_price, qi.subtotal
+         from quote_items qi
          left join services s on s.id = qi.service_id
          left join extras e on e.id = qi.extra_id
-         where q.client_id = $1
-         group by q.id
-         order by q.created_at desc`,
-        [clientId]
-      )
-    : { rows: [] as ConversationQuote[] };
+         where qi.quote_id = any($1::uuid[])`,
+        [quoteRows.map((q) => q.id)]
+      );
+
+      for (const q of quoteRows) {
+        quotes.push({ ...q, items: items.filter((i) => i.quote_id === q.id) });
+      }
+    }
+  }
 
   return { conversation: rows[0], messages, toolCalls, quotes };
 }
