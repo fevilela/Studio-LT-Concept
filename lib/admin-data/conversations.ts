@@ -35,6 +35,19 @@ export type ConversationMessage = {
   created_at: string;
 };
 
+export type ConversationQuote = {
+  id: string;
+  event_date: string;
+  event_time: string | null;
+  event_location: string | null;
+  number_of_people: number;
+  total_value: string | null;
+  status: string;
+  notes: string | null;
+  service_names: string | null;
+  created_at: string;
+};
+
 export async function getConversationById(id: string) {
   const { rows } = await query<ConversationListItem & { client_id: string | null }>(
     `select c.id, c.client_id, cl.full_name as client_name, c.phone_number, c.status,
@@ -62,7 +75,24 @@ export async function getConversationById(id: string) {
     [id]
   );
 
-  return { conversation: rows[0], messages, toolCalls };
+  const clientId = rows[0].client_id;
+  const { rows: quotes } = clientId
+    ? await query<ConversationQuote>(
+        `select q.id, q.event_date, q.event_time, q.event_location, q.number_of_people,
+                q.total_value, q.status, q.notes, q.created_at,
+                string_agg(coalesce(s.name, e.name), ', ' order by coalesce(s.name, e.name)) as service_names
+         from quotes q
+         left join quote_items qi on qi.quote_id = q.id
+         left join services s on s.id = qi.service_id
+         left join extras e on e.id = qi.extra_id
+         where q.client_id = $1
+         group by q.id
+         order by q.created_at desc`,
+        [clientId]
+      )
+    : { rows: [] as ConversationQuote[] };
+
+  return { conversation: rows[0], messages, toolCalls, quotes };
 }
 
 export type BotToolCall = {
