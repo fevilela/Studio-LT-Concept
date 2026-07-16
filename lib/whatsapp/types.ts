@@ -18,6 +18,12 @@ export type WhatsAppStatusUpdate = {
   status: "sent" | "delivered" | "read" | "failed";
   timestamp: string;
   recipient_id: string;
+  errors?: Array<{
+    code: number;
+    title?: string;
+    message?: string;
+    error_data?: { details?: string };
+  }>;
 };
 
 export type WhatsAppWebhookPayload = {

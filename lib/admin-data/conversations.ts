@@ -31,6 +31,7 @@ export type ConversationMessage = {
   content: string | null;
   message_type: string;
   status: string;
+  raw_payload: { last_status?: { errors?: Array<{ code: number; title?: string; message?: string }> } } | null;
   created_at: string;
 };
 
@@ -46,7 +47,7 @@ export async function getConversationById(id: string) {
   if (rows.length === 0) return null;
 
   const { rows: messages } = await query<ConversationMessage>(
-    `select id, direction, sender_type, content, message_type, status, created_at
+    `select id, direction, sender_type, content, message_type, status, raw_payload, created_at
      from whatsapp_messages
      where conversation_id = $1
      order by created_at asc`,

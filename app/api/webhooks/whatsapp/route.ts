@@ -150,10 +150,12 @@ async function processWebhookPayload(payload: WhatsAppWebhookPayload) {
       }
 
       for (const status of value.statuses ?? []) {
-        await pool.query(`update whatsapp_messages set status = $1 where whatsapp_message_id = $2`, [
-          status.status,
-          status.id,
-        ]);
+        await pool.query(
+          `update whatsapp_messages
+           set status = $1, raw_payload = coalesce(raw_payload, '{}'::jsonb) || $2::jsonb
+           where whatsapp_message_id = $3`,
+          [status.status, JSON.stringify({ last_status: status }), status.id]
+        );
       }
     }
   }

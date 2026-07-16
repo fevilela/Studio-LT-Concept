@@ -59,6 +59,7 @@ export default async function ConversationThreadPage({
           )}
           {messages.map((m) => {
             const isInbound = m.direction === "inbound";
+            const error = m.status === "failed" ? m.raw_payload?.last_status?.errors?.[0] : undefined;
             return (
               <div key={m.id} className={cn("flex", isInbound ? "justify-start" : "justify-end")}>
                 <div
@@ -76,6 +77,14 @@ export default async function ConversationThreadPage({
                   )}
                   <p className="whitespace-pre-wrap">{m.content}</p>
                   <p className="mt-1 text-[10px] opacity-60">{formatDateTime(m.created_at)}</p>
+                  {m.status === "failed" && (
+                    <p className="mt-1 flex items-start gap-1 text-[10px] text-destructive">
+                      <AlertTriangle className="mt-0.5 size-3 shrink-0" />
+                      {error
+                        ? `Falhou (${error.code}): ${error.title ?? error.message ?? "erro desconhecido"}`
+                        : "Falhou ao entregar."}
+                    </p>
+                  )}
                 </div>
               </div>
             );
