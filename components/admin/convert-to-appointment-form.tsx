@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,12 +28,15 @@ export function ConvertToAppointmentForm({
   teamMembers: TeamMember[];
   defaultStartTime?: string;
 }) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   function handleSubmit(formData: FormData) {
     startTransition(async () => {
       try {
         await convertQuoteToAppointment(formData);
+        toast.success("Agendamento confirmado.");
+        router.push("/admin/agenda");
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Não foi possível agendar.");
       }

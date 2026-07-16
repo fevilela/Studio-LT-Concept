@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { query, getPool } from "@/lib/db";
 import { requireAuth } from "@/lib/require-auth";
 import { localDateTimeToBrazilISO } from "@/lib/format";
@@ -134,5 +133,4 @@ export async function convertQuoteToAppointment(formData: FormData) {
 
   revalidatePath("/admin/orcamentos");
   revalidatePath("/admin/agenda");
-  redirect("/admin/agenda");
 }
