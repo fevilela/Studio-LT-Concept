@@ -18,6 +18,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
+type NotificationsStatus = { unreadMessages: number; quotesCount: number };
+
 const links = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/orcamentos", label: "Orçamentos", icon: FileText },
@@ -38,19 +40,19 @@ export function AdminSidebar() {
   useEffect(() => {
     let cancelled = false;
 
-    async function fetchUnreadCount() {
+    async function fetchNotifications() {
       try {
-        const res = await fetch("/api/admin/unread-count");
+        const res = await fetch("/api/admin/notifications");
         if (!res.ok) return;
-        const data = await res.json();
-        if (!cancelled) setUnreadCount(data.total);
+        const data: NotificationsStatus = await res.json();
+        if (!cancelled) setUnreadCount(data.unreadMessages);
       } catch {
         // ignora falhas de rede pontuais — tenta de novo no próximo intervalo
       }
     }
 
-    fetchUnreadCount();
-    const id = setInterval(fetchUnreadCount, 8000);
+    fetchNotifications();
+    const id = setInterval(fetchNotifications, 8000);
     return () => {
       cancelled = true;
       clearInterval(id);

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AdminSidebar } from "@/components/admin/sidebar";
 import { LogoutButton } from "@/components/admin/logout-button";
 import { AdminMobileNav } from "@/components/admin/mobile-nav";
+import { NotificationListener } from "@/components/admin/notification-listener";
 import { getCurrentTeamMember } from "@/lib/admin-data";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -9,6 +10,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="flex min-h-full flex-col sm:flex-row">
+      <NotificationListener />
       <AdminMobileNav memberName={member?.full_name} memberRole={member?.role} />
 
       <aside className="hidden w-64 shrink-0 flex-col border-r border-border/60 bg-secondary/30 p-5 sm:flex">

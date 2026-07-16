@@ -9,9 +9,15 @@ export async function GET() {
     return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
   }
 
-  const { rows } = await query<{ total: string }>(
+  const { rows: msgRows } = await query<{ total: string }>(
     `select coalesce(sum(unread_count), 0) as total from whatsapp_conversations`
   );
+  const { rows: quoteRows } = await query<{ total: string }>(
+    `select count(*) as total from quotes`
+  );
 
-  return NextResponse.json({ total: Number(rows[0].total) });
+  return NextResponse.json({
+    unreadMessages: Number(msgRows[0].total),
+    quotesCount: Number(quoteRows[0].total),
+  });
 }
