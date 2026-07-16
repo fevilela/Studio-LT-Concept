@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { getConversations } from "@/lib/admin-data/conversations";
 import { formatDateTime } from "@/lib/format";
+import { AutoRefresh } from "@/components/admin/auto-refresh";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,7 @@ export default async function ConversasPage() {
 
   return (
     <div className="space-y-6">
+      <AutoRefresh />
       <div>
         <h1 className="font-serif text-3xl text-foreground">Conversas</h1>
         <p className="mt-1 text-sm text-muted-foreground">

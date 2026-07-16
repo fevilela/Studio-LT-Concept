@@ -6,6 +6,7 @@ import { formatDateTime } from "@/lib/format";
 import { ConversationReplyForm } from "@/components/admin/conversation-reply-form";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { AutoRefresh } from "@/components/admin/auto-refresh";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +39,7 @@ export default async function ConversationThreadPage({
 
   return (
     <div className="flex h-[calc(100vh-9rem)] gap-6 sm:h-[calc(100vh-6rem)]">
+      <AutoRefresh />
       <div className="flex flex-1 flex-col">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-4">
           <div>

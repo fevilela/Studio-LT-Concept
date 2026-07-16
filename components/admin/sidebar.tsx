@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -14,6 +15,7 @@ import {
   Sparkles,
   BarChart3,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -31,6 +33,29 @@ const links = [
 
 export function AdminSidebar() {
   const pathname = usePathname();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchUnreadCount() {
+      try {
+        const res = await fetch("/api/admin/unread-count");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled) setUnreadCount(data.total);
+      } catch {
+        // ignora falhas de rede pontuais — tenta de novo no próximo intervalo
+      }
+    }
+
+    fetchUnreadCount();
+    const id = setInterval(fetchUnreadCount, 8000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, []);
 
   return (
     <nav className="space-y-1">
@@ -48,7 +73,10 @@ export function AdminSidebar() {
             )}
           >
             <Icon className="size-4" />
-            {label}
+            <span className="flex-1">{label}</span>
+            {href === "/admin/conversas" && unreadCount > 0 && (
+              <Badge className="h-5 min-w-5 justify-center px-1.5">{unreadCount}</Badge>
+            )}
           </Link>
         );
       })}
