@@ -40,11 +40,15 @@ export default async function ConversasPage() {
             href={`/admin/conversas/${c.id}`}
             className="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-card p-4 transition-colors hover:bg-accent"
           >
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <p className="font-medium text-foreground">{c.client_name ?? c.phone_number}</p>
+                <p className="truncate font-medium text-foreground">
+                  {c.client_name ?? c.phone_number}
+                </p>
                 {c.unread_count > 0 && (
-                  <Badge className="h-5 min-w-5 justify-center px-1.5">{c.unread_count}</Badge>
+                  <Badge className="h-5 min-w-5 shrink-0 justify-center px-1.5">
+                    {c.unread_count}
+                  </Badge>
                 )}
               </div>
               <p className="truncate text-sm text-muted-foreground">
