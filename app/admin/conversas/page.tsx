@@ -33,36 +33,33 @@ export default async function ConversasPage() {
         </Card>
       )}
 
-      <div className="space-y-1.5">
+      <div className="space-y-2">
         {conversations.map((c) => (
           <Link
             key={c.id}
             href={`/admin/conversas/${c.id}`}
-            className="flex items-center justify-between gap-3 overflow-hidden rounded-lg border border-border/60 bg-card px-3 py-2 transition-colors hover:bg-accent"
+            className="flex items-center justify-between gap-4 overflow-hidden rounded-xl border border-border/60 bg-card p-4 transition-colors hover:bg-accent"
           >
             <div className="min-w-0 flex-1 overflow-hidden">
               <div className="flex min-w-0 items-center gap-2">
-                <p className="min-w-0 truncate text-sm font-medium text-foreground">
+                <p className="min-w-0 truncate font-medium text-foreground">
                   {c.client_name ?? c.phone_number}
                 </p>
                 {c.unread_count > 0 && (
-                  <Badge className="h-4 min-w-4 shrink-0 justify-center px-1 text-[10px]">
+                  <Badge className="h-5 min-w-5 shrink-0 justify-center px-1.5">
                     {c.unread_count}
                   </Badge>
                 )}
               </div>
-              <p className="truncate text-xs text-muted-foreground">
+              <p className="truncate text-sm text-muted-foreground">
                 {c.last_message_preview ?? "Sem mensagens"}
               </p>
             </div>
-            <div className="flex shrink-0 flex-col items-end gap-0.5">
-              <span className="text-[10px] text-muted-foreground">
+            <div className="flex shrink-0 flex-col items-end gap-1">
+              <span className="text-xs text-muted-foreground">
                 {c.last_message_at ? formatDateTime(c.last_message_at) : ""}
               </span>
-              <Badge
-                variant={c.status === "human_active" ? "default" : "secondary"}
-                className="text-[10px]"
-              >
+              <Badge variant={c.status === "human_active" ? "default" : "secondary"}>
                 {c.status === "bot_active" ? "Bot" : c.status === "closed" ? "Fechada" : "Atendendo"}
               </Badge>
             </div>
