@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { query, getPool } from "@/lib/db";
 import { requireAuth } from "@/lib/require-auth";
 import { localDateTimeToBrazilISO } from "@/lib/format";
-import { sendWhatsAppTemplateMessage } from "@/lib/whatsapp/client";
+import { sendReactivationTemplateMessage } from "@/lib/whatsapp/client";
 
 const VALID_STATUSES = ["pending", "sent", "approved", "rejected", "expired"] as const;
 
@@ -36,21 +36,17 @@ export async function getOrCreateConversationForClient(
     [conversationId]
   );
 
-  const templateName = process.env.WHATSAPP_QUOTE_CONTACT_TEMPLATE_NAME;
-  if (existingMessages.length === 0 && templateName) {
+  if (existingMessages.length === 0) {
     try {
-      const waMessageId = await sendWhatsAppTemplateMessage(clientPhone, templateName, "pt_BR", {
-        nome_cliente: clientFirstName,
-      });
+      const { messageId, content } = await sendReactivationTemplateMessage(
+        clientPhone,
+        clientFirstName
+      );
       await query(
         `insert into whatsapp_messages
            (conversation_id, direction, sender_type, content, message_type, whatsapp_message_id, status)
          values ($1, 'outbound', 'human', $2, 'template', $3, 'sent')`,
-        [
-          conversationId,
-          `[Modelo enviado] Olá ${clientFirstName}! Recebemos seu pedido de orçamento no site e ficaríamos muito felizes em conversar com você sobre os detalhes do seu grande dia. Pode responder essa mensagem quando puder! 💛`,
-          waMessageId ?? null,
-        ]
+        [conversationId, content, messageId ?? null]
       );
       await query(`update whatsapp_conversations set last_message_at = now() where id = $1`, [
         conversationId,

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { query } from "@/lib/db";
 import { requireAuth } from "@/lib/require-auth";
-import { sendWhatsAppTextMessage } from "@/lib/whatsapp/client";
+import { sendWhatsAppTextMessage, sendReactivationTemplateMessage } from "@/lib/whatsapp/client";
 
 export async function sendManualReply(formData: FormData) {
   await requireAuth();
@@ -31,6 +31,38 @@ export async function sendManualReply(formData: FormData) {
      where id = $1`,
     [conversationId]
   );
+
+  revalidatePath(`/admin/conversas/${conversationId}`);
+  revalidatePath("/admin/conversas");
+}
+
+/**
+ * Reabre a conversa mandando o template de reengajamento — necessário quando
+ * já se passaram 24h desde a última mensagem da cliente (a Meta bloqueia
+ * texto livre nesse caso, só aceita um modelo aprovado).
+ */
+export async function sendReactivationMessage(
+  conversationId: string,
+  phoneNumber: string,
+  clientFirstName: string
+) {
+  await requireAuth();
+
+  const { messageId, content } = await sendReactivationTemplateMessage(
+    phoneNumber,
+    clientFirstName
+  );
+
+  await query(
+    `insert into whatsapp_messages
+       (conversation_id, direction, sender_type, content, message_type, whatsapp_message_id, status)
+     values ($1, 'outbound', 'human', $2, 'template', $3, 'sent')`,
+    [conversationId, content, messageId ?? null]
+  );
+
+  await query(`update whatsapp_conversations set last_message_at = now() where id = $1`, [
+    conversationId,
+  ]);
 
   revalidatePath(`/admin/conversas/${conversationId}`);
   revalidatePath("/admin/conversas");

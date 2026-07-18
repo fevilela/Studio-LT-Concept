@@ -5,9 +5,17 @@ import { query } from "@/lib/db";
 import { getConversationById } from "@/lib/admin-data/conversations";
 import { formatDate, formatDateTime, formatPrice } from "@/lib/format";
 import { ConversationReplyForm } from "@/components/admin/conversation-reply-form";
+import { ReactivateConversationButton } from "@/components/admin/reactivate-conversation-button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { AutoRefresh } from "@/components/admin/auto-refresh";
+
+const WINDOW_MS = 24 * 60 * 60 * 1000;
+
+function isWithinReplyWindow(lastInboundAt: string | null) {
+  if (!lastInboundAt) return false;
+  return Date.now() - new Date(lastInboundAt).getTime() < WINDOW_MS;
+}
 
 export const dynamic = "force-dynamic";
 
@@ -50,7 +58,9 @@ export default async function ConversationThreadPage({
 
   await query(`update whatsapp_conversations set unread_count = 0 where id = $1`, [id]);
 
-  const hasInboundMessage = messages.some((m) => m.direction === "inbound");
+  const inboundMessages = messages.filter((m) => m.direction === "inbound");
+  const lastInboundAt = inboundMessages.at(-1)?.created_at ?? null;
+  const canSendFreeform = isWithinReplyWindow(lastInboundAt);
 
   return (
     <div className="flex h-[calc(100vh-9rem)] gap-6 sm:h-[calc(100vh-6rem)]">
@@ -109,16 +119,21 @@ export default async function ConversationThreadPage({
         </div>
 
         <div className="border-t border-border/60 pt-4">
-          {!hasInboundMessage && (
+          {!canSendFreeform && (
             <div className="mb-3 flex items-start gap-2 rounded-lg bg-accent/60 p-3 text-xs text-accent-foreground">
               <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
-              <p>
-                Essa cliente ainda não mandou nenhuma mensagem por aqui. A Meta só permite a
-                empresa enviar a primeira mensagem através de um modelo aprovado (ainda não
-                configurado) — por enquanto, é preciso que ela mande uma mensagem primeiro (ou
-                fale com ela por outro canal e peça pra ela chamar no WhatsApp) antes de
-                responder por aqui.
-              </p>
+              <div className="flex-1 space-y-2">
+                <p>
+                  {lastInboundAt
+                    ? "Já se passaram mais de 24h desde a última mensagem dessa cliente. A Meta não deixa mandar texto livre nesse caso — só reabrindo com uma mensagem de modelo aprovado."
+                    : "Essa cliente ainda não mandou nenhuma mensagem por aqui. A Meta só permite a empresa enviar a primeira mensagem através de um modelo aprovado — por enquanto, é preciso que ela mande uma mensagem primeiro (ou fale com ela por outro canal e peça pra ela chamar no WhatsApp) antes de responder por aqui."}
+                </p>
+                <ReactivateConversationButton
+                  conversationId={conversation.id}
+                  phoneNumber={conversation.phone_number}
+                  clientName={conversation.client_name ?? conversation.phone_number}
+                />
+              </div>
             </div>
           )}
           <ConversationReplyForm

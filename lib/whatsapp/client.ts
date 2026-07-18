@@ -104,3 +104,25 @@ export async function sendWhatsAppTemplateMessage(
 
   return json.messages?.[0]?.id as string | undefined;
 }
+
+/**
+ * Envia o template de primeiro contato/reengajamento (WHATSAPP_QUOTE_CONTACT_TEMPLATE_NAME)
+ * — usado tanto para iniciar contato quando a cliente nunca respondeu quanto para reabrir
+ * uma conversa depois que a janela de 24h expirou de novo.
+ */
+export async function sendReactivationTemplateMessage(to: string, clientFirstName: string) {
+  const templateName = process.env.WHATSAPP_QUOTE_CONTACT_TEMPLATE_NAME;
+  if (!templateName) {
+    throw new Error(
+      "Nenhum modelo de mensagem configurado ainda (WHATSAPP_QUOTE_CONTACT_TEMPLATE_NAME)."
+    );
+  }
+
+  const messageId = await sendWhatsAppTemplateMessage(to, templateName, "pt_BR", {
+    nome_cliente: clientFirstName,
+  });
+
+  const content = `[Modelo enviado] Olá ${clientFirstName}! Recebemos seu pedido de orçamento no site e ficaríamos muito felizes em conversar com você sobre os detalhes do seu grande dia. Pode responder essa mensagem quando puder! 💛`;
+
+  return { messageId, content };
+}
