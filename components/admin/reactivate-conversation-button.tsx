@@ -14,14 +14,14 @@ export function ReactivateConversationButton({
 }: {
   conversationId: string;
   phoneNumber: string;
-  clientName: string;
+  clientName?: string;
 }) {
   const [isPending, startTransition] = useTransition();
 
   function handleClick() {
     startTransition(async () => {
       try {
-        const firstName = clientName.split(" ")[0];
+        const firstName = clientName?.split(" ")[0];
         await sendReactivationMessage(conversationId, phoneNumber, firstName);
         toast.success("Mensagem de reengajamento enviada.");
       } catch (err) {

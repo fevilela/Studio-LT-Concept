@@ -106,11 +106,11 @@ export async function sendWhatsAppTemplateMessage(
 }
 
 /**
- * Envia o template de primeiro contato/reengajamento (WHATSAPP_QUOTE_CONTACT_TEMPLATE_NAME)
- * — usado tanto para iniciar contato quando a cliente nunca respondeu quanto para reabrir
- * uma conversa depois que a janela de 24h expirou de novo.
+ * Envia o template de primeiro contato (WHATSAPP_QUOTE_CONTACT_TEMPLATE_NAME) — usado
+ * quando a cliente ainda nunca mandou mensagem nenhuma, ao clicar em "Iniciar conversa"
+ * num orçamento.
  */
-export async function sendReactivationTemplateMessage(to: string, clientFirstName: string) {
+export async function sendFirstContactTemplateMessage(to: string, clientFirstName: string) {
   const templateName = process.env.WHATSAPP_QUOTE_CONTACT_TEMPLATE_NAME;
   if (!templateName) {
     throw new Error(
@@ -125,4 +125,22 @@ export async function sendReactivationTemplateMessage(to: string, clientFirstNam
   const content = `[Modelo enviado] Olá ${clientFirstName}! Recebemos seu pedido de orçamento no site e ficaríamos muito felizes em conversar com você sobre os detalhes do seu grande dia. Pode responder essa mensagem quando puder! 💛`;
 
   return { messageId, content };
+}
+
+/**
+ * Envia o template de reengajamento (WHATSAPP_REACTIVATION_TEMPLATE_NAME) — usado pelo
+ * botão "Reenviar mensagem de contato" quando a janela de 24h já expirou numa conversa
+ * que já tinha mensagens antes. Template simples, sem variáveis (ex.: "Olá!").
+ */
+export async function sendReopenConversationMessage(to: string) {
+  const templateName = process.env.WHATSAPP_REACTIVATION_TEMPLATE_NAME;
+  if (!templateName) {
+    throw new Error(
+      "Nenhum modelo de reengajamento configurado ainda (WHATSAPP_REACTIVATION_TEMPLATE_NAME)."
+    );
+  }
+
+  const messageId = await sendWhatsAppTemplateMessage(to, templateName, "pt_BR");
+
+  return { messageId, content: "[Modelo enviado] Olá!" };
 }

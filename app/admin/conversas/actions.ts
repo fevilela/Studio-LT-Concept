@@ -3,7 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { query } from "@/lib/db";
 import { requireAuth } from "@/lib/require-auth";
-import { sendWhatsAppTextMessage, sendReactivationTemplateMessage } from "@/lib/whatsapp/client";
+import {
+  sendWhatsAppTextMessage,
+  sendReopenConversationMessage,
+  sendFirstContactTemplateMessage,
+} from "@/lib/whatsapp/client";
 
 export async function sendManualReply(formData: FormData) {
   await requireAuth();
@@ -37,21 +41,28 @@ export async function sendManualReply(formData: FormData) {
 }
 
 /**
- * Reabre a conversa mandando o template de reengajamento — necessário quando
- * já se passaram 24h desde a última mensagem da cliente (a Meta bloqueia
- * texto livre nesse caso, só aceita um modelo aprovado).
+ * Reabre a conversa mandando um template aprovado — necessário quando a Meta
+ * bloqueia texto livre (cliente nunca respondeu, ou já se passaram 24h desde a
+ * última mensagem dela). Se a conversa nunca teve mensagem nenhuma, usa o
+ * template de primeiro contato (personalizado com o nome); caso contrário, usa
+ * o template genérico de reengajamento ("Olá!").
  */
 export async function sendReactivationMessage(
   conversationId: string,
   phoneNumber: string,
-  clientFirstName: string
+  clientFirstName?: string
 ) {
   await requireAuth();
 
-  const { messageId, content } = await sendReactivationTemplateMessage(
-    phoneNumber,
-    clientFirstName
+  const { rows: existing } = await query<{ id: string }>(
+    `select id from whatsapp_messages where conversation_id = $1 limit 1`,
+    [conversationId]
   );
+
+  const { messageId, content } =
+    existing.length === 0 && clientFirstName
+      ? await sendFirstContactTemplateMessage(phoneNumber, clientFirstName)
+      : await sendReopenConversationMessage(phoneNumber);
 
   await query(
     `insert into whatsapp_messages

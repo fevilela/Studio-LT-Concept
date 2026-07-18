@@ -28,6 +28,8 @@ services:
         sync: false
       - key: WHATSAPP_QUOTE_CONTACT_TEMPLATE_NAME
         sync: false
+      - key: WHATSAPP_REACTIVATION_TEMPLATE_NAME
+        sync: false
       - key: RESEND_API_KEY
         sync: false
       - key: ADMIN_NOTIFICATION_EMAIL

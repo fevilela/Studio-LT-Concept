@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { query, getPool } from "@/lib/db";
 import { requireAuth } from "@/lib/require-auth";
 import { localDateTimeToBrazilISO } from "@/lib/format";
-import { sendReactivationTemplateMessage } from "@/lib/whatsapp/client";
+import { sendFirstContactTemplateMessage } from "@/lib/whatsapp/client";
 
 const VALID_STATUSES = ["pending", "sent", "approved", "rejected", "expired"] as const;
 
@@ -38,7 +38,7 @@ export async function getOrCreateConversationForClient(
 
   if (existingMessages.length === 0) {
     try {
-      const { messageId, content } = await sendReactivationTemplateMessage(
+      const { messageId, content } = await sendFirstContactTemplateMessage(
         clientPhone,
         clientFirstName
       );
