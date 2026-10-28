@@ -5,6 +5,7 @@ import { query, getPool } from "@/lib/db";
 import { requireAuth } from "@/lib/require-auth";
 import { localDateTimeToBrazilISO } from "@/lib/format";
 import { sendFirstContactTemplateMessage } from "@/lib/whatsapp/client";
+import { getConversationRecipient } from "@/lib/whatsapp/recipient";
 
 const VALID_STATUSES = ["pending", "sent", "approved", "rejected", "expired"] as const;
 
@@ -17,19 +18,29 @@ const VALID_STATUSES = ["pending", "sent", "approved", "rejected", "expired"] as
  */
 export async function getOrCreateConversationForClient(
   clientId: string,
-  clientPhone: string,
+  clientPhone: string | null,
   clientFirstName: string
 ) {
   await requireAuth();
 
-  const { rows } = await query<{ id: string }>(
-    `insert into whatsapp_conversations (client_id, phone_number, status)
-     values ($1, $2, 'human_active')
-     on conflict (phone_number) do update set client_id = excluded.client_id
-     returning id`,
-    [clientId, clientPhone]
+  const { rows: byClient } = await query<{ id: string }>(
+    `select id from whatsapp_conversations where client_id = $1
+     order by last_message_at desc nulls last limit 1`,
+    [clientId]
   );
-  const conversationId = rows[0].id;
+
+  let conversationId = byClient[0]?.id;
+  if (!conversationId) {
+    if (!clientPhone) throw new Error("Essa cliente não tem telefone cadastrado.");
+    const { rows } = await query<{ id: string }>(
+      `insert into whatsapp_conversations (client_id, phone_number, status)
+       values ($1, $2, 'human_active')
+       on conflict (phone_number) do update set client_id = excluded.client_id
+       returning id`,
+      [clientId, clientPhone]
+    );
+    conversationId = rows[0].id;
+  }
 
   const { rows: existingMessages } = await query<{ id: string }>(
     `select id from whatsapp_messages where conversation_id = $1 limit 1`,
@@ -39,7 +50,7 @@ export async function getOrCreateConversationForClient(
   if (existingMessages.length === 0) {
     try {
       const { messageId, content } = await sendFirstContactTemplateMessage(
-        clientPhone,
+        await getConversationRecipient(conversationId),
         clientFirstName
       );
       await query(

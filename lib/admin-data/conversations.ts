@@ -3,7 +3,7 @@ import { query } from "@/lib/db";
 export type ConversationListItem = {
   id: string;
   client_name: string;
-  phone_number: string;
+  phone_number: string | null;
   status: string;
   last_message_at: string | null;
   unread_count: number;
@@ -77,14 +77,6 @@ export async function getConversationById(id: string) {
     [id]
   );
 
-  const { rows: toolCalls } = await query<BotToolCall>(
-    `select id, tool_name, input, output, created_at
-     from bot_tool_calls
-     where conversation_id = $1
-     order by created_at asc`,
-    [id]
-  );
-
   const clientId = rows[0].client_id;
   const quotes: ConversationQuote[] = [];
 
@@ -112,13 +104,6 @@ export async function getConversationById(id: string) {
     }
   }
 
-  return { conversation: rows[0], messages, toolCalls, quotes };
+  return { conversation: rows[0], messages, quotes };
 }
 
-export type BotToolCall = {
-  id: string;
-  tool_name: string;
-  input: unknown;
-  output: unknown;
-  created_at: string;
-};

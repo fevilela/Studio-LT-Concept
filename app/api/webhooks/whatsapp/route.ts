@@ -1,7 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { after } from "next/server";
+import type { PoolClient } from "pg";
 import { getPool } from "@/lib/db";
-import { processBotReply } from "@/lib/anthropic/bot";
 import type { WhatsAppWebhookPayload } from "@/lib/whatsapp/types";
 
 // GET: verificação do webhook exigida pela Meta ao configurar a URL no painel.
@@ -56,48 +55,44 @@ export async function POST(request: Request) {
     return new Response("OK", { status: 200 });
   }
 
-  // Grava as mensagens agora (rápido) e devolve 200 imediatamente para a Meta
-  // — ela reenvia agressivamente se não receber 200 a tempo, o que causaria
-  // duplicatas. O bot (chamada à IA + envio da resposta) roda depois, via
-  // after(), sem atrasar essa resposta.
-  let conversationsWithNewMessages: string[] = [];
+  // Grava as mensagens e devolve 200 rápido — a Meta reenvia se não receber 200
+  // a tempo, o que causaria duplicatas (evitadas pelo unique em whatsapp_message_id).
   try {
-    conversationsWithNewMessages = await processWebhookPayload(payload);
+    await processWebhookPayload(payload);
   } catch (err) {
     console.error("[whatsapp webhook] Failed to process payload", err);
   }
-
-  after(async () => {
-    for (const conversationId of conversationsWithNewMessages) {
-      try {
-        await processBotReply(conversationId);
-      } catch (err) {
-        console.error("[whatsapp webhook] Bot processing failed", conversationId, err);
-      }
-    }
-  });
 
   return new Response("OK", { status: 200 });
 }
 
 async function processWebhookPayload(payload: WhatsAppWebhookPayload) {
-  if (payload.object !== "whatsapp_business_account") return [];
+  if (payload.object !== "whatsapp_business_account") return;
 
   const pool = getPool();
-  const conversationIds: string[] = [];
-
-  const { rows: botConfigRows } = await pool.query<{ active: boolean }>(
-    `select active from bot_config where id = 1`
-  );
-  const botActive = botConfigRows[0]?.active ?? false;
 
   for (const entry of payload.entry ?? []) {
     for (const change of entry.changes ?? []) {
       const value = change.value;
 
       for (const message of value.messages ?? []) {
-        const phone = normalizePhone(message.from);
-        const contactName = value.contacts?.find((c) => c.wa_id === message.from)?.profile.name;
+        // Telefone pode não vir (cliente com nome de usuário); o BSUID sempre vem.
+        const contact =
+          value.contacts?.find(
+            (c) =>
+              (message.from_user_id && c.user_id === message.from_user_id) ||
+              (message.from && c.wa_id === message.from)
+          ) ?? (value.contacts?.length === 1 ? value.contacts[0] : undefined);
+        const phone = message.from ? normalizePhone(message.from) : null;
+        const userId = message.from_user_id ?? contact?.user_id ?? null;
+
+        if (!phone && !userId) {
+          console.error("[whatsapp webhook] Mensagem sem telefone e sem BSUID — ignorada", message.id);
+          continue;
+        }
+
+        const contactName =
+          contact?.profile?.name ?? contact?.profile?.username ?? phone ?? "Cliente WhatsApp";
         const content =
           message.text?.body ??
           (message.type !== "text" ? `[${message.type}]` : null);
@@ -106,29 +101,15 @@ async function processWebhookPayload(payload: WhatsAppWebhookPayload) {
         try {
           await client.query("begin");
 
-          const { rows: clientRows } = await client.query<{ id: string }>(
-            `insert into clients (full_name, phone)
-             values ($1, $2)
-             on conflict (phone) do update set full_name = coalesce(clients.full_name, excluded.full_name)
-             returning id`,
-            [contactName ?? phone, phone]
-          );
-          const clientId = clientRows[0].id;
+          const clientId = await findOrCreateClient(client, { phone, userId, name: contactName });
+          const conversationId = await upsertConversation(client, {
+            clientId,
+            phone,
+            userId,
+            initialStatus: "human_active",
+          });
 
-          const initialStatus = botActive ? "bot_active" : "human_active";
-          const { rows: convRows } = await client.query<{ id: string }>(
-            `insert into whatsapp_conversations (client_id, phone_number, status, last_message_at, unread_count)
-             values ($1, $2, $3, now(), 1)
-             on conflict (phone_number) do update
-               set last_message_at = now(),
-                   unread_count = whatsapp_conversations.unread_count + 1,
-                   client_id = excluded.client_id
-             returning id`,
-            [clientId, phone, initialStatus]
-          );
-          const conversationId = convRows[0].id;
-
-          const { rowCount } = await client.query(
+          await client.query(
             `insert into whatsapp_messages
                (conversation_id, direction, sender_type, content, message_type, whatsapp_message_id, raw_payload)
              values ($1, 'inbound', 'client', $2, $3, $4, $5)
@@ -137,10 +118,6 @@ async function processWebhookPayload(payload: WhatsAppWebhookPayload) {
           );
 
           await client.query("commit");
-
-          if (rowCount && rowCount > 0) {
-            conversationIds.push(conversationId);
-          }
         } catch (err) {
           await client.query("rollback");
           throw err;
@@ -160,5 +137,82 @@ async function processWebhookPayload(payload: WhatsAppWebhookPayload) {
     }
   }
 
-  return conversationIds;
+}
+
+type Identity = { phone: string | null; userId: string | null };
+
+/** Acha a cliente pelo BSUID (preferência) ou telefone; cria se não existir.
+ * Completa o dado que faltava (ex.: BSUID numa cliente antiga cadastrada só por telefone). */
+async function findOrCreateClient(db: PoolClient, { phone, userId, name }: Identity & { name: string }) {
+  const find = () =>
+    db.query<{ id: string }>(
+      `select id from clients
+       where ($1::text is not null and wa_user_id = $1) or ($2::text is not null and phone = $2)
+       order by (wa_user_id is not distinct from $1::text) desc
+       limit 1`,
+      [userId, phone]
+    );
+
+  let { rows } = await find();
+  if (!rows[0]) {
+    // "do nothing" cobre corrida entre duas entregas simultâneas do webhook.
+    const inserted = await db.query<{ id: string }>(
+      `insert into clients (full_name, phone, wa_user_id) values ($1, $2, $3)
+       on conflict do nothing returning id`,
+      [name, phone, userId]
+    );
+    if (inserted.rows[0]) return inserted.rows[0].id;
+    ({ rows } = await find());
+  }
+
+  const id = rows[0].id;
+  await db.query(
+    `update clients set
+       wa_user_id = coalesce(wa_user_id, $2::text),
+       phone = coalesce(phone, case when not exists (select 1 from clients where phone = $3::text) then $3::text end)
+     where id = $1`,
+    [id, userId, phone]
+  );
+  return id;
+}
+
+async function upsertConversation(
+  db: PoolClient,
+  { clientId, phone, userId, initialStatus }: Identity & { clientId: string; initialStatus: string }
+) {
+  const find = () =>
+    db.query<{ id: string }>(
+      `select id from whatsapp_conversations
+       where ($1::text is not null and wa_user_id = $1) or ($2::text is not null and phone_number = $2)
+       order by (wa_user_id is not distinct from $1::text) desc
+       limit 1`,
+      [userId, phone]
+    );
+
+  let { rows } = await find();
+  if (!rows[0]) {
+    const inserted = await db.query<{ id: string }>(
+      `insert into whatsapp_conversations
+         (client_id, phone_number, wa_user_id, status, last_message_at, unread_count)
+       values ($1, $2, $3, $4, now(), 1)
+       on conflict do nothing returning id`,
+      [clientId, phone, userId, initialStatus]
+    );
+    if (inserted.rows[0]) return inserted.rows[0].id;
+    ({ rows } = await find());
+  }
+
+  const id = rows[0].id;
+  await db.query(
+    `update whatsapp_conversations set
+       last_message_at = now(),
+       unread_count = unread_count + 1,
+       client_id = $2,
+       wa_user_id = coalesce(wa_user_id, $3::text),
+       phone_number = coalesce(phone_number,
+         case when not exists (select 1 from whatsapp_conversations where phone_number = $4::text) then $4::text end)
+     where id = $1`,
+    [id, clientId, userId, phone]
+  );
+  return id;
 }

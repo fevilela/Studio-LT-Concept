@@ -8,19 +8,20 @@ import {
   sendReopenConversationMessage,
   sendFirstContactTemplateMessage,
 } from "@/lib/whatsapp/client";
+import { getConversationRecipient } from "@/lib/whatsapp/recipient";
 
 export async function sendManualReply(formData: FormData) {
   await requireAuth();
 
   const conversationId = String(formData.get("conversation_id"));
-  const phoneNumber = String(formData.get("phone_number"));
   const content = String(formData.get("content") ?? "").trim();
 
-  if (!conversationId || !phoneNumber || !content) {
+  if (!conversationId || !content) {
     throw new Error("Escreva uma mensagem antes de enviar.");
   }
 
-  const whatsappMessageId = await sendWhatsAppTextMessage(phoneNumber, content);
+  const recipient = await getConversationRecipient(conversationId);
+  const whatsappMessageId = await sendWhatsAppTextMessage(recipient, content);
 
   await query(
     `insert into whatsapp_messages
@@ -49,10 +50,11 @@ export async function sendManualReply(formData: FormData) {
  */
 export async function sendReactivationMessage(
   conversationId: string,
-  phoneNumber: string,
   clientFirstName?: string
 ) {
   await requireAuth();
+
+  const recipient = await getConversationRecipient(conversationId);
 
   const { rows: existing } = await query<{ id: string }>(
     `select id from whatsapp_messages where conversation_id = $1 limit 1`,
@@ -61,8 +63,8 @@ export async function sendReactivationMessage(
 
   const { messageId, content } =
     existing.length === 0 && clientFirstName
-      ? await sendFirstContactTemplateMessage(phoneNumber, clientFirstName)
-      : await sendReopenConversationMessage(phoneNumber);
+      ? await sendFirstContactTemplateMessage(recipient, clientFirstName)
+      : await sendReopenConversationMessage(recipient);
 
   await query(
     `insert into whatsapp_messages

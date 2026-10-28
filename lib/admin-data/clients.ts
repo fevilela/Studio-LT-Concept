@@ -3,7 +3,7 @@ import { query } from "@/lib/db";
 export type ClientListItem = {
   id: string;
   full_name: string;
-  phone: string;
+  phone: string | null;
   email: string | null;
   cpf: string | null;
   created_at: string;
@@ -53,7 +53,7 @@ export async function getClients(filters: ClientFilters = {}) {
 export type ClientDetail = {
   id: string;
   full_name: string;
-  phone: string;
+  phone: string | null;
   email: string | null;
   cpf: string | null;
   notes: string | null;

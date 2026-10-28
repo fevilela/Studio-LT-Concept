@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Wrench, AlertTriangle, FileText, Calendar, Clock, Users, MapPin } from "lucide-react";
+import { AlertTriangle, FileText, Calendar, Clock, Users, MapPin } from "lucide-react";
 import { query } from "@/lib/db";
 import { getConversationById } from "@/lib/admin-data/conversations";
 import { formatDate, formatDateTime, formatPrice } from "@/lib/format";
@@ -54,7 +54,7 @@ export default async function ConversationThreadPage({
   const { id } = await params;
   const result = await getConversationById(id);
   if (!result) notFound();
-  const { conversation, messages, toolCalls, quotes } = result;
+  const { conversation, messages, quotes } = result;
 
   await query(`update whatsapp_conversations set unread_count = 0 where id = $1`, [id]);
 
@@ -71,7 +71,9 @@ export default async function ConversationThreadPage({
             <h1 className="font-serif text-2xl text-foreground">
               {conversation.client_name ?? conversation.phone_number}
             </h1>
-            <p className="text-sm text-muted-foreground">{conversation.phone_number}</p>
+            <p className="text-sm text-muted-foreground">
+              {conversation.phone_number ?? "Telefone oculto (cliente usa nome de usuário no WhatsApp)"}
+            </p>
           </div>
           <Badge variant={conversation.status === "bot_active" ? "secondary" : "default"}>
             {statusLabels[conversation.status] ?? conversation.status}
@@ -130,20 +132,18 @@ export default async function ConversationThreadPage({
                 </p>
                 <ReactivateConversationButton
                   conversationId={conversation.id}
-                  phoneNumber={conversation.phone_number}
-                  clientName={conversation.client_name ?? conversation.phone_number}
+                  clientName={conversation.client_name ?? undefined}
                 />
               </div>
             </div>
           )}
           <ConversationReplyForm
             conversationId={conversation.id}
-            phoneNumber={conversation.phone_number}
           />
         </div>
       </div>
 
-      {(quotes.length > 0 || toolCalls.length > 0) && (
+      {quotes.length > 0 && (
         <aside className="hidden w-80 shrink-0 space-y-6 overflow-y-auto border-l border-border/60 pl-6 lg:block">
           {quotes.length > 0 && (
             <div>
@@ -221,24 +221,6 @@ export default async function ConversationThreadPage({
             </div>
           )}
 
-          {toolCalls.length > 0 && (
-            <div>
-              <p className="mb-3 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                <Wrench className="size-3.5" /> O que o bot fez
-              </p>
-              <div className="space-y-2">
-                {toolCalls.map((t) => (
-                  <div key={t.id} className="rounded-lg border border-border/60 bg-card p-3 text-xs">
-                    <p className="font-medium text-foreground">{t.tool_name}</p>
-                    <p className="mt-1 text-muted-foreground">{formatDateTime(t.created_at)}</p>
-                    <pre className="mt-2 overflow-x-auto whitespace-pre-wrap text-[10px] text-muted-foreground">
-                      {JSON.stringify(t.output, null, 1)}
-                    </pre>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </aside>
       )}
     </div>
