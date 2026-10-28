@@ -23,7 +23,7 @@ export default function PrivacidadePage() {
             Quando você preenche o formulário de orçamento, entra em contato pelo WhatsApp ou
             agenda um atendimento, coletamos: nome completo, telefone, e-mail (quando informado),
             detalhes do evento (data, local, número de pessoas) e o histórico das conversas
-            trocadas com a nossa equipe e com o assistente virtual pelo WhatsApp.
+            trocadas com a nossa equipe pelo WhatsApp.
           </p>
         </section>
 
@@ -31,19 +31,8 @@ export default function PrivacidadePage() {
           <h2 className="font-serif text-xl text-foreground">Como usamos esses dados</h2>
           <p className="mt-2">
             Usamos essas informações exclusivamente para: calcular e enviar orçamentos, organizar
-            a agenda de atendimentos, responder dúvidas (por um atendente ou pelo nosso assistente
-            virtual com inteligência artificial) e manter contato sobre o seu atendimento. Não
+            a agenda de atendimentos, responder dúvidas e manter contato sobre o seu atendimento. Não
             vendemos nem compartilhamos seus dados com terceiros para fins de marketing.
-          </p>
-        </section>
-
-        <section>
-          <h2 className="font-serif text-xl text-foreground">Assistente virtual (IA)</h2>
-          <p className="mt-2">
-            Parte do atendimento pelo WhatsApp pode ser feita por um assistente virtual que usa
-            inteligência artificial para responder dúvidas frequentes, consultar disponibilidade
-            de horários e registrar orçamentos. A qualquer momento você pode pedir para falar com
-            uma pessoa da equipe, e a conversa será transferida.
           </p>
         </section>
 

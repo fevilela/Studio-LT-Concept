@@ -5,7 +5,8 @@ import { formatDateTime } from "@/lib/format";
 type AppointmentDue = {
   id: string;
   client_name: string;
-  client_phone: string;
+  client_phone: string | null;
+  client_wa_user_id: string | null;
   start_time: string;
 };
 
@@ -31,7 +32,7 @@ export async function GET(request: Request) {
   }
 
   const { rows: dueAppointments } = await query<AppointmentDue>(
-    `select a.id, c.full_name as client_name, c.phone as client_phone, a.start_time
+    `select a.id, c.full_name as client_name, c.phone as client_phone, c.wa_user_id as client_wa_user_id, a.start_time
      from appointments a
      join clients c on c.id = a.client_id
      where a.status in ('scheduled', 'confirmed')
@@ -44,7 +45,9 @@ export async function GET(request: Request) {
     try {
       // Nomes de variável de exemplo — ajustar para bater com o template real
       // quando ele for criado e aprovado no Business Manager.
-      await sendWhatsAppTemplateMessage(appt.client_phone, templateName, "pt_BR", {
+      await sendWhatsAppTemplateMessage(
+        { phone: appt.client_phone, userId: appt.client_wa_user_id },
+        templateName, "pt_BR", {
         nome_cliente: appt.client_name,
         data_horario: formatDateTime(appt.start_time),
       });

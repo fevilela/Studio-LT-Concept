@@ -52,7 +52,7 @@ export function ClientEditDialog({ client }: { client: ClientDetail }) {
 
           <div className="space-y-2">
             <Label htmlFor="phone">Telefone</Label>
-            <Input id="phone" name="phone" defaultValue={client.phone} required />
+            <Input id="phone" name="phone" defaultValue={client.phone ?? ""} required />
           </div>
 
           <div className="space-y-2">

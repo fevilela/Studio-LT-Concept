@@ -1,4 +1,19 @@
-const GRAPH_VERSION = "v21.0";
+// v21.0 expira em 21/01/2027. Ver https://developers.facebook.com/docs/graph-api/changelog/versions
+const GRAPH_VERSION = "v26.0";
+
+/**
+ * Destinatário de uma mensagem. Com os nomes de usuário do WhatsApp, a Meta pode
+ * não informar o telefone da cliente — nesse caso envia-se para o BSUID
+ * (campo `recipient`). Se houver telefone, ele é usado (`to`).
+ */
+export type WhatsAppRecipient = { phone?: string | null; userId?: string | null };
+
+function recipientFields(recipient: WhatsAppRecipient) {
+  const phone = recipient.phone?.replace(/\D/g, "");
+  if (phone) return { to: phone };
+  if (recipient.userId) return { recipient: recipient.userId };
+  throw new Error("Essa conversa não tem telefone nem ID do WhatsApp para enviar a mensagem.");
+}
 
 function getConfig() {
   const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
@@ -14,7 +29,7 @@ function getConfig() {
 }
 
 /** Envia uma mensagem de texto livre. Só funciona dentro da janela de 24h desde a última mensagem do cliente. */
-export async function sendWhatsAppTextMessage(to: string, body: string) {
+export async function sendWhatsAppTextMessage(to: WhatsAppRecipient, body: string) {
   const { accessToken, phoneNumberId } = getConfig();
 
   const res = await fetch(
@@ -27,7 +42,7 @@ export async function sendWhatsAppTextMessage(to: string, body: string) {
       },
       body: JSON.stringify({
         messaging_product: "whatsapp",
-        to: to.replace(/\D/g, ""),
+        ...recipientFields(to),
         type: "text",
         text: { body },
       }),
@@ -54,7 +69,7 @@ export async function sendWhatsAppTextMessage(to: string, body: string) {
  * `{{nome_cliente}}` em vez de `{{1}}`).
  */
 export async function sendWhatsAppTemplateMessage(
-  to: string,
+  to: WhatsAppRecipient,
   templateName: string,
   languageCode: string,
   parameters: Record<string, string> = {}
@@ -73,7 +88,7 @@ export async function sendWhatsAppTemplateMessage(
       },
       body: JSON.stringify({
         messaging_product: "whatsapp",
-        to: to.replace(/\D/g, ""),
+        ...recipientFields(to),
         type: "template",
         template: {
           name: templateName,
@@ -110,7 +125,7 @@ export async function sendWhatsAppTemplateMessage(
  * quando a cliente ainda nunca mandou mensagem nenhuma, ao clicar em "Iniciar conversa"
  * num orçamento.
  */
-export async function sendFirstContactTemplateMessage(to: string, clientFirstName: string) {
+export async function sendFirstContactTemplateMessage(to: WhatsAppRecipient, clientFirstName: string) {
   const templateName = process.env.WHATSAPP_QUOTE_CONTACT_TEMPLATE_NAME;
   if (!templateName) {
     throw new Error(
@@ -132,7 +147,7 @@ export async function sendFirstContactTemplateMessage(to: string, clientFirstNam
  * botão "Reenviar mensagem de contato" quando a janela de 24h já expirou numa conversa
  * que já tinha mensagens antes. Template simples, sem variáveis (ex.: "Olá!").
  */
-export async function sendReopenConversationMessage(to: string) {
+export async function sendReopenConversationMessage(to: WhatsAppRecipient) {
   const templateName = process.env.WHATSAPP_REACTIVATION_TEMPLATE_NAME;
   if (!templateName) {
     throw new Error(

@@ -3,7 +3,7 @@ import { query } from "@/lib/db";
 export type AppointmentListItem = {
   id: string;
   client_name: string;
-  client_phone: string;
+  client_phone: string | null;
   team_member_name: string;
   start_time: string;
   end_time: string;

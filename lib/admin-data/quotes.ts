@@ -3,7 +3,7 @@ import { query } from "@/lib/db";
 export type QuoteListItem = {
   id: string;
   client_name: string;
-  client_phone: string;
+  client_phone: string | null;
   event_date: string;
   number_of_people: number;
   total_value: string | null;

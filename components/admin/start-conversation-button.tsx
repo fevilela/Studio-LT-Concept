@@ -14,7 +14,7 @@ export function StartConversationButton({
   clientName,
 }: {
   clientId: string;
-  clientPhone: string;
+  clientPhone: string | null;
   clientName: string;
 }) {
   const router = useRouter();

@@ -7,13 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { sendManualReply } from "@/app/admin/conversas/actions";
 
-export function ConversationReplyForm({
-  conversationId,
-  phoneNumber,
-}: {
-  conversationId: string;
-  phoneNumber: string;
-}) {
+export function ConversationReplyForm({ conversationId }: { conversationId: string }) {
   const [isPending, startTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -31,7 +25,6 @@ export function ConversationReplyForm({
   return (
     <form ref={formRef} action={handleSubmit} className="flex items-end gap-2">
       <input type="hidden" name="conversation_id" value={conversationId} />
-      <input type="hidden" name="phone_number" value={phoneNumber} />
       <Textarea
         name="content"
         placeholder="Escreva uma resposta..."

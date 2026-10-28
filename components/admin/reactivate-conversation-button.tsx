@@ -9,11 +9,9 @@ import { sendReactivationMessage } from "@/app/admin/conversas/actions";
 
 export function ReactivateConversationButton({
   conversationId,
-  phoneNumber,
   clientName,
 }: {
   conversationId: string;
-  phoneNumber: string;
   clientName?: string;
 }) {
   const [isPending, startTransition] = useTransition();
@@ -22,7 +20,7 @@ export function ReactivateConversationButton({
     startTransition(async () => {
       try {
         const firstName = clientName?.split(" ")[0];
-        await sendReactivationMessage(conversationId, phoneNumber, firstName);
+        await sendReactivationMessage(conversationId, firstName);
         toast.success("Mensagem de reengajamento enviada.");
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Não foi possível enviar.");
